@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 
 # Set up Streamlit
 st.set_page_config(page_title="TCM Diagnostic Assistant", layout="wide")
-st.title("TCM Diagnostic Assistant")
+st.title("Welcome To AcuAssist")
 
 # Load API keys from Streamlit secrets
 PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
@@ -35,7 +35,7 @@ groq_client = init_groq_client()
 
 # Main page content
 st.write("""
-Welcome to the TCM Diagnostic Assistant. This application helps generate 
+Welcome to the AcuAssist. This application helps generate 
 comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on 
 patient information and symptoms.
 
