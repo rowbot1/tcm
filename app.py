@@ -46,13 +46,15 @@ index = pc.Index(INDEX_NAME)
 # Initialize Groq client
 groq_client = groq.Client(api_key=GROQ_API_KEY)
 
-# Function to add a record to Pinecone
-def add_record_to_pinecone(record_id, vector, metadata=None):
-    try:
-        index.upsert(vectors=[(record_id, vector, metadata)])
-        print(f"Record {record_id} added to Pinecone successfully.")
-    except Exception as e:
-        print(f"Error adding record to Pinecone: {e}")
+# Define report sections globally
+report_sections = [
+    "1. Case Abstract",
+    "2. Case Study",
+    "3. TCM Diagnosis",
+    "4. Diagnosis and Treatment Plan",
+    "5. TCM Pattern Differentiation Diagram",
+    "6. References"
+]
 
 # Function to query Pinecone
 def query_pinecone(query_text, top_k=5):
@@ -83,15 +85,6 @@ def generate_diagnostic_report_part(system_message, user_message):
 # Function to generate a full diagnostic report
 def generate_diagnostic_report(context, user_input):
     system_message = "You are a world-renowned Traditional Chinese Medicine practitioner with decades of experience and deep knowledge of both traditional and modern TCM practices. Your diagnostic reports are known for their exceptional detail, insight, and thoroughness."
-    
-    report_sections = [
-        "1. Case Abstract",
-        "2. Case Study",
-        "3. TCM Diagnosis",
-        "4. Diagnosis and Treatment Plan",
-        "5. TCM Pattern Differentiation Diagram",
-        "6. References"
-    ]
     
     full_report = ""
     
