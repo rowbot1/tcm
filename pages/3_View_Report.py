@@ -76,4 +76,34 @@ if 'generated_report' in st.session_state:
                     var svg = diagram.querySelector('svg');
                     if (svg) {{
                         var height = svg.getBoundingClientRect().height;
-                        diagram.style.height = height +
+                        diagram.style.height = height +diagram.style.height = height + 'px';
+                        parent.postMessage({{type: 'setFrameHeight', height: height + 50}}, '*');
+                    }}
+                }}
+                renderDiagram();
+                window.addEventListener('load', adjustHeight);
+                new MutationObserver(adjustHeight).observe(document.getElementById("{key}"), {{ attributes: true, childList: true, subtree: true }});
+            </script>
+            """,
+            height=600,  # Initial height, will be adjusted by JavaScript
+            scrolling=True
+        )
+        st.write("\n")
+
+    # Create Word document
+    doc = create_docx_report(report_without_diagrams, matches)
+    
+    # Save the document to a BytesIO object
+    docx_io = BytesIO()
+    doc.save(docx_io)
+    docx_io.seek(0)
+
+    # Create a download button for the Word document
+    st.download_button(
+        label="Download Report as Word Document",
+        data=docx_io,
+        file_name=f"TCM_Report_{st.session_state.patient_info['name']}_{datetime.date.today().strftime('%Y-%m-%d')}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+else:
+    st.warning("No generated report found. Please generate a report in the 'Generate Report' page first.")
