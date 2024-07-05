@@ -4,15 +4,7 @@ import hashlib
 import json
 import time
 import datetime
-import PyPDF2
 import re
-from llama_index.core import (
-    VectorStoreIndex,
-    SimpleDirectoryReader,
-    Document,
-    StorageContext,
-    load_index_from_storage,
-)
 from docx import Document as DocxDocument
 from io import BytesIO
 from urllib.parse import quote
@@ -58,131 +50,15 @@ groq_client = groq.Client(api_key=GROQ_API_KEY)
 def add_record_to_pinecone(record_id, vector, metadata=None):
     try:
         index.upsert(vectors=[(record_id, vector, metadata)])
-        print(f"Record {record_id} added to Pinecone successfully.")  # Changed to print for debugging
+        print(f"Record {record_id} added to Pinecone successfully.")
     except Exception as e:
-        print(f"Error adding record to Pinecone: {e}")  # Changed to print for debugging
+        print(f"Error adding record to Pinecone: {e}")
 
-# Function to get file hash
-def get_file_hash(file_path):
-    with open(file_path, "rb") as f:
-        file_hash = hashlib.md5()
-        chunk = f.read(8192)
-        while chunk:
-            file_hash.update(chunk)
-            chunk = f.read(8192)
-    return file_hash.hexdigest()
-
-# Function to check if index needs rebuilding
-def index_needs_rebuild():
-    if not os.path.exists("./storage") or not os.path.exists("./storage/file_hashes.json"):
-        return True
-    
-    with open("./storage/file_hashes.json", "r") as f:
-        stored_hashes = json.load(f)
-    
-    current_files = {f: get_file_hash(os.path.join("./data", f)) for f in os.listdir("./data") if f.endswith('.pdf')}
-    
-    return current_files != stored_hashes
-
-# Create or load index
-@st.cache_resource
-def create_or_load_index():
-    if not os.path.exists("./data"):
-        logger.error("No data directory found")
-        st.error("No data directory found. Please add a 'data' directory with TCM-related PDF files and restart the app.")
-        return None
-
-    if index_needs_rebuild():
-        with st.spinner("Creating new index... This may take a while."):
-            logger.info("Starting index rebuild process")
-            # Check if data directory contains PDF files
-            pdf_files = [f for f in os.listdir("./data") if f.endswith('.pdf')]
-            if not pdf_files:
-                logger.error("No PDF files found in the ./data directory")
-                st.error("No PDF files found in the ./data directory. Please add TCM-related PDF files and restart the app.")
-                return None
-            
-            # Load PDF documents manually
-            documents = []
-            file_hashes = {}
-            failed_files = []
-            embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-            for pdf_file in pdf_files:
-                try:
-                    logger.info(f"Processing file: {pdf_file}")
-                    file_path = os.path.join("./data", pdf_file)
-                    with open(file_path, 'rb') as file:
-                        pdf_reader = PdfReader(file)
-                        text = ""
-                        for page in pdf_reader.pages:
-                            text += page.extract_text()
-                        if text:
-                            doc = Document(text=text, metadata={"file_name": pdf_file})
-                            documents.append(doc)
-                            file_hashes[pdf_file] = get_file_hash(file_path)
-                            
-                            logger.info(f"Processing document: {doc.metadata['file_name']}")
-                            # Generate embeddings
-                            vector = embedding_model.encode(text[:512]).tolist()
-                            logger.info(f"Generated vector of length: {len(vector)}")
-                            
-                            # Add to Pinecone
-                            metadata = {"file_name": doc.metadata["file_name"]}
-                            add_record_to_pinecone(doc.metadata["file_name"], vector, metadata)
-                        else:
-                            logger.warning(f"No text extracted from {pdf_file}")
-                            failed_files.append(pdf_file)
-                except Exception as e:
-                    logger.error(f"Error processing {pdf_file}: {str(e)}")
-                    failed_files.append(pdf_file)
-            
-            if not documents:
-                logger.error("Failed to load any PDF files")
-                st.error("Failed to load any PDF files. Please check your PDF files and ensure they are not corrupted.")
-                return None
-            
-            # Convert documents to index
-            logger.info("Creating VectorStoreIndex")
-            index = VectorStoreIndex.from_documents(documents)
-            index.storage_context.persist("./storage")
-
-            # Save file hashes
-            with open("./storage/file_hashes.json", "w") as f:
-                json.dump(file_hashes, f)
-            
-            logger.info(f"Index created successfully with {len(documents)} documents")
-        
-        st.success(f"Index created successfully with {len(documents)} documents.")
-        if failed_files:
-            logger.warning(f"Failed to load {len(failed_files)} file(s): {', '.join(failed_files)}")
-            st.warning(f"Failed to load {len(failed_files)} file(s): {', '.join(failed_files)}")
-    else:
-        with st.spinner("Loading existing index..."):
-            logger.info("Loading existing index")
-            storage_context = StorageContext.from_defaults(persist_dir="./storage")
-            index = load_index_from_storage(storage_context)
-        logger.info("Index loaded successfully")
-        st.success("Index loaded successfully.")
-    
-    return index
-
-# Load or create index
-index = create_or_load_index()
-
-# Function to calculate age
-def calculate_age(born):
-    today = datetime.date.today()
-    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-
-# Define report sections globally
-report_sections = [
-    "1. Case Abstract",
-    "2. Case Study",
-    "3. TCM Diagnosis",
-    "4. Diagnosis and Treatment Plan",
-    "5. TCM Pattern Differentiation Diagram",
-    "6. References"
-]
+# Function to query Pinecone
+def query_pinecone(query_text, top_k=5):
+    query_vector = embedding_model.encode(query_text).tolist()
+    results = index.query(vector=query_vector, top_k=top_k, include_metadata=True)
+    return results
 
 # Function to generate diagnostic report part
 def generate_diagnostic_report_part(system_message, user_message):
@@ -207,6 +83,15 @@ def generate_diagnostic_report_part(system_message, user_message):
 # Function to generate a full diagnostic report
 def generate_diagnostic_report(context, user_input):
     system_message = "You are a world-renowned Traditional Chinese Medicine practitioner with decades of experience and deep knowledge of both traditional and modern TCM practices. Your diagnostic reports are known for their exceptional detail, insight, and thoroughness."
+    
+    report_sections = [
+        "1. Case Abstract",
+        "2. Case Study",
+        "3. TCM Diagnosis",
+        "4. Diagnosis and Treatment Plan",
+        "5. TCM Pattern Differentiation Diagram",
+        "6. References"
+    ]
     
     full_report = ""
     
@@ -253,18 +138,12 @@ def create_docx_report(report_text, mermaid_diagrams):
 
     return doc
 
+# Function to calculate age
+def calculate_age(born):
+    today = datetime.date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
 # Main app layout
-if 'index' not in st.session_state:
-    st.session_state.index = None
-
-if st.session_state.index is None:
-    index = create_or_load_index()
-    
-    if index is not None:
-        st.session_state.index = index
-    else:
-        st.error("Failed to create or load index. Please check the errors above.")
-
 st.header("TCM Patient Information Form")
 
 # Basic Information
@@ -346,127 +225,127 @@ st.subheader("Additional Symptoms")
 additional_symptoms = st.text_area("Any other symptoms or concerns", height=150)
 
 if st.button("Generate Diagnostic Report"):
-    if st.session_state.index is not None:
-        user_input = f"""
-        Name: {name}
-        Date of Birth: {dob.strftime('%d/%m/%Y') if dob else 'Not provided'}
-        Age: {age if age is not None else 'Not available'}
-        Gender: {gender}
-        Occupation: {occupation}
-        Chief Complaint: {chief_complaint}
-        Complaint Background: {complaint_background}
-        Medical History: {medical_history}
-        Lifestyle: {lifestyle}
-        Current Medications: {current_medications}
+    user_input = f"""
+    Name: {name}
+    Date of Birth: {dob.strftime('%d/%m/%Y') if dob else 'Not provided'}
+    Age: {age if age is not None else 'Not available'}
+    Gender: {gender}
+    Occupation: {occupation}
+    Chief Complaint: {chief_complaint}
+    Complaint Background: {complaint_background}
+    Medical History: {medical_history}
+    Lifestyle: {lifestyle}
+    Current Medications: {current_medications}
+    
+    10 Questions for Internal Diseases:
+    {json.dumps(answers, indent=2)}
+    
+    Tongue Diagnosis:
+    Color: {tongue_color}
+    Coating: {tongue_coating}
+    Shape: {", ".join(tongue_shape)}
+    Moisture: {tongue_moisture}
+    
+    Pulse Diagnosis:
+    Rate: {pulse_rate} BPM
+    Quality: {", ".join(pulse_quality)}
+    
+    Additional Symptoms: {additional_symptoms}
+    """
+    
+    # Query Pinecone for relevant context
+    query_results = query_pinecone(user_input)
+    context = "\n".join([match['metadata']['text'] for match in query_results['matches'] if 'text' in match['metadata']])
+    
+    # Estimate time for report generation
+    estimated_time = len(report_sections) * 30  # 30 seconds per section
+    st.write(f"Estimated time for report generation: {estimated_time // 60} minutes and {estimated_time % 60} seconds")
+    
+    start_time = time.time()
+    with st.spinner("Generating diagnostic report..."):
+        report = generate_diagnostic_report(context, user_input)
+    end_time = time.time()
+    
+    st.success(f"Report generated in {end_time - start_time:.2f} seconds")
+    
+    st.header("TCM Diagnostic Report")
+    
+    # Extract Mermaid diagrams
+    pattern = r'```mermaid\n(.*?)```'
+    matches = re.findall(pattern, report, re.DOTALL)
+    
+    # Remove the Mermaid code blocks from the text
+    report_without_diagrams = re.sub(pattern, '', report, flags=re.DOTALL)
+    
+    # Display the report text
+    st.markdown(report_without_diagrams)
+    
+    # Render Mermaid diagrams at the bottom
+    st.header("TCM Pattern Differentiation Diagrams")
+    for i, match in enumerate(matches):
+        # Create a unique key for each Mermaid diagram
+        key = f"mermaid_diagram_{i}"
         
-        10 Questions for Internal Diseases:
-        {json.dumps(answers, indent=2)}
+        # Encode the Mermaid diagram content
+        encoded_diagram = quote(match.strip())
         
-        Tongue Diagnosis:
-        Color: {tongue_color}
-        Coating: {tongue_coating}
-        Shape: {", ".join(tongue_shape)}
-        Moisture: {tongue_moisture}
-        
-        Pulse Diagnosis:
-        Rate: {pulse_rate} BPM
-        Quality: {", ".join(pulse_quality)}
-        
-        Additional Symptoms: {additional_symptoms}
-        """
-        
-        query_engine = st.session_state.index.as_query_engine()
-        context = query_engine.query(user_input).response
-        
-        # Estimate time for report generation (adjust as needed based on your observations)
-        estimated_time = len(report_sections) * 30  # 30 seconds per section
-        st.write(f"Estimated time for report generation: {estimated_time // 60} minutes and {estimated_time % 60} seconds")
-        
-        start_time = time.time()
-        with st.spinner("Generating diagnostic report..."):
-            report = generate_diagnostic_report(context, user_input)
-        end_time = time.time()
-        
-        st.success(f"Report generated in {end_time - start_time:.2f} seconds")
-        
-        st.header("TCM Diagnostic Report")# Extract Mermaid diagrams
-        pattern = r'```mermaid\n(.*?)```'
-        matches = re.findall(pattern, report, re.DOTALL)
-        
-        # Remove the Mermaid code blocks from the text
-        report_without_diagrams = re.sub(pattern, '', report, flags=re.DOTALL)
-        
-        # Display the report text
-        st.markdown(report_without_diagrams)
-        
-        # Render Mermaid diagrams at the bottom
-        st.header("TCM Pattern Differentiation Diagrams")
-        for i, match in enumerate(matches):
-            # Create a unique key for each Mermaid diagram
-            key = f"mermaid_diagram_{i}"
-            
-            # Encode the Mermaid diagram content
-            encoded_diagram = quote(match.strip())
-            
-            # Render the Mermaid diagram using a custom component
-            components.html(
-                f"""
-                <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-                <div id="{key}_container">
-                    <div class="mermaid" id="{key}"></div>
-                </div>
-                <pre id="{key}_fallback" style="display:none; white-space: pre-wrap; word-wrap: break-word;">
-                    {match.strip()}
-                </pre>
-                <script>
-                    mermaid.initialize({{ startOnLoad: false }});
-                    function renderDiagram() {{
-                        var encodedDiagram = "{encoded_diagram}";
-                        var decodedDiagram = decodeURIComponent(encodedDiagram);
-                        mermaid.render('{key}_svg', decodedDiagram).then(function(result) {{
-                            document.getElementById('{key}').innerHTML = result.svg;
-                        }}).catch(function(error) {{
-                            console.error('Error rendering Mermaid diagram:', error);document.getElementById('{key}_container').style.display = 'none';
-                            document.getElementById('{key}_fallback').style.display = 'block';
-                        }});
+        # Render the Mermaid diagram using a custom component
+        components.html(
+            f"""
+            <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+            <div id="{key}_container">
+                <div class="mermaid" id="{key}"></div>
+            </div>
+            <pre id="{key}_fallback" style="display:none; white-space: pre-wrap; word-wrap: break-word;">
+                {match.strip()}
+            </pre>
+            <script>
+                mermaid.initialize({{ startOnLoad: false }});
+                function renderDiagram() {{
+                    var encodedDiagram = "{encoded_diagram}";
+                    var decodedDiagram = decodeURIComponent(encodedDiagram);
+                    mermaid.render('{key}_svg', decodedDiagram).then(function(result) {{
+                        document.getElementById('{key}').innerHTML = result.svg;
+                    }}).catch(function(error) {{
+                        console.error('Error rendering Mermaid diagram:', error);
+                        document.getElementById('{key}_container').style.display = 'none';
+                        document.getElementById('{key}_fallback').style.display = 'block';
+                    }});
+                }}
+                function adjustHeight() {{
+                    var diagram = document.getElementById("{key}");
+                    var svg = diagram.querySelector('svg');
+                    if (svg) {{
+                        var height = svg.getBoundingClientRect().height;
+                        diagram.style.height = height + 'px';
+                        parent.postMessage({{type: 'setFrameHeight', height: height + 50}}, '*');
                     }}
-                    function adjustHeight() {{
-                        var diagram = document.getElementById("{key}");
-                        var svg = diagram.querySelector('svg');
-                        if (svg) {{
-                            var height = svg.getBoundingClientRect().height;
-                            diagram.style.height = height + 'px';
-                            parent.postMessage({{type: 'setFrameHeight', height: height + 50}}, '*');
-                        }}
-                    }}
-                    renderDiagram();
-                    window.addEventListener('load', adjustHeight);
-                    new MutationObserver(adjustHeight).observe(document.getElementById("{key}"), {{ attributes: true, childList: true, subtree: true }});
-                </script>
-                """,
-                height=600,  # Initial height, will be adjusted by JavaScript
-                scrolling=True
-            )
-            st.write("\n")
-
-        # Create Word document
-        doc = create_docx_report(report_without_diagrams, matches)
-        
-        # Save the document to a BytesIO object
-        docx_io = BytesIO()
-        doc.save(docx_io)
-        docx_io.seek(0)
-
-        # Create a download button for the Word document
-        st.download_button(
-            label="Download Report as Word Document",
-            data=docx_io,
-            file_name=f"TCM_Report_{name}_{datetime.date.today().strftime('%Y-%m-%d')}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                }}
+                renderDiagram();
+                window.addEventListener('load', adjustHeight);
+                new MutationObserver(adjustHeight).observe(document.getElementById("{key}"), {{ attributes: true, childList: true, subtree: true }});
+            </script>
+            """,
+            height=600,  # Initial height, will be adjusted by JavaScript
+            scrolling=True
         )
+        st.write("\n")
 
-    else:
-        st.error("Knowledge base is not available. Please check the errors above and ensure TCM-related PDF files are in the ./data directory.")
+    # Create Word document
+    doc = create_docx_report(report_without_diagrams, matches)
+    
+    # Save the document to a BytesIO object
+    docx_io = BytesIO()
+    doc.save(docx_io)
+    docx_io.seek(0)
+
+    # Create a download button for the Word document
+    st.download_button(
+        label="Download Report as Word Document",
+        data=docx_io,
+        file_name=f"TCM_Report_{name}_{datetime.date.today().strftime('%Y-%m-%d')}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
 
 # Add the disclaimer at the bottom of the main content
 st.markdown("""
