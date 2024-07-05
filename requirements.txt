@@ -1,7 +1,5 @@
 streamlit
 PyPDF2
-hashlib
-json
 datetime
 re
 llama-index
