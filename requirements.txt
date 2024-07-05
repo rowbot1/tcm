@@ -1,0 +1,11 @@
+streamlit
+PyPDF2
+hashlib
+json
+datetime
+re
+llama-index
+docx
+sentence-transformers
+pinecone-client
+groq
