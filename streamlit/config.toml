@@ -1,0 +1,21 @@
+[theme]
+base="light"
+
+[server]
+enableCORS=false
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = false
+
+[global]
+developmentMode = false
+
+[theme]
+primaryColor="#F63366"
+backgroundColor="#FFFFFF"
+secondaryBackgroundColor="#F0F2F6"
+textColor="#262730"
+font="sans serif"
