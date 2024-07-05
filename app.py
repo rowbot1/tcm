@@ -4,7 +4,7 @@ import groq
 from sentence_transformers import SentenceTransformer
 
 # Set up Streamlit
-st.set_page_config(page_title="TCM Diagnostic Assistant", layout="wide")
+st.set_page_config(page_title="AcuAssist", layout="wide")
 st.title("Welcome To AcuAssist")
 
 # Load API keys from Streamlit secrets
@@ -33,6 +33,13 @@ index = init_pinecone()
 embedding_model = init_embedding_model()
 groq_client = init_groq_client()
 
+# Function to clear patient data
+def clear_patient_data():
+    for key in list(st.session_state.keys()):
+        if key.startswith('patient_') or key in ['generated_report']:
+            del st.session_state[key]
+    st.success("Patient data has been cleared.")
+
 # Main page content
 st.write("""
 Welcome to the AcuAssist. This application helps generate 
@@ -47,6 +54,10 @@ Please use the sidebar to navigate through different sections of the application
 
 Get started by entering patient information in the 'Patient Information' page.
 """)
+
+# Add Clear Patient Data button
+if st.button("Clear Patient Data"):
+    clear_patient_data()
 
 # Add the disclaimer at the bottom of the main content
 st.markdown("""
