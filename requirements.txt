@@ -1,9 +1,7 @@
 streamlit
 PyPDF2
-datetime
-re
 llama-index
-docx
+python-docx
 sentence-transformers
 pinecone-client
 groq
