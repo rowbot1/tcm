@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@llamaindex/pinecone": "^0.0.1",
+    "llamaindex": "^0.4.10",
+    "openai": "^4.52.2"
+  }
+}
