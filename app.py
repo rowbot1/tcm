@@ -87,6 +87,11 @@ def index_needs_rebuild():
 # Create or load index
 @st.cache_resource
 def create_or_load_index():
+    if not os.path.exists("./data"):
+        logger.error("No data directory found")
+        st.error("No data directory found. Please add a 'data' directory with TCM-related PDF files and restart the app.")
+        return None
+
     if index_needs_rebuild():
         with st.spinner("Creating new index... This may take a while."):
             logger.info("Starting index rebuild process")
@@ -101,12 +106,13 @@ def create_or_load_index():
             documents = []
             file_hashes = {}
             failed_files = []
+            embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
             for pdf_file in pdf_files:
                 try:
                     logger.info(f"Processing file: {pdf_file}")
                     file_path = os.path.join("./data", pdf_file)
                     with open(file_path, 'rb') as file:
-                        pdf_reader = PyPDF2.PdfReader(file)
+                        pdf_reader = PdfReader(file)
                         text = ""
                         for page in pdf_reader.pages:
                             text += page.extract_text()
