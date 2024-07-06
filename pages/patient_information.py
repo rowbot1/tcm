@@ -18,13 +18,17 @@ def patient_info_page():
         required_fields = ['name', 'dob', 'gender', 'occupation', 'chief_complaint', 'complaint_background', 
                            'medical_history', 'lifestyle', 'current_medications', 'tongue_color', 'tongue_coating', 
                            'tongue_moisture', 'pulse_rate', 'additional_symptoms']
-        filled_fields = sum(1 for field in required_fields if st.session_state.patient_info.get(field))
-        return filled_fields / len(required_fields)
+        question_fields = [f'question_{i}_answer' for i in range(10)]
+        all_fields = required_fields + question_fields
+        
+        filled_fields = sum(1 for field in all_fields if st.session_state.patient_info.get(field))
+        return filled_fields / len(all_fields)
 
     # Display progress bar
     progress = calculate_progress()
     st.progress(progress)
     st.write(f"Progress: {progress:.0%}")
+
 
     # Function to calculate age
     def calculate_age(born):
@@ -140,5 +144,15 @@ def patient_info_page():
         else:
             st.warning("Please fill in patient information before generating a report.")
 
+             # Generate Report button
+    if st.button("Generate Report"):
+        if calculate_progress() > 0.5:  # Require at least 50% completion
+            st.session_state.generate_report = True
+            st.session_state.page = "View Report"
+            st.experimental_rerun()
+        else:
+            st.warning("Please fill in more patient information before generating a report.")
+
 # This line is not needed if this file is imported as a module
 # patient_info_page()
+
