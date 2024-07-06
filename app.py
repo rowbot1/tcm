@@ -130,25 +130,36 @@ def create_word_document(report):
     
     return doc
 
+# Navigation function
+def navigation():
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("Home"):
+            st.session_state.page = "home"
+            st.experimental_rerun()
+    with col2:
+        if st.button("Patient Information"):
+            st.session_state.page = "patient_info"
+            st.experimental_rerun()
+    with col3:
+        if st.button("View Report"):
+            st.session_state.page = "view_report"
+            st.experimental_rerun()
+
 # Main app logic
 def main():
     if 'page' not in st.session_state:
         st.session_state.page = "home"
 
-    # Navigation
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Patient Information", "View Report"])
+    navigation()
 
-    if page == "Home":
+    if st.session_state.page == "home":
         st.title("Welcome to AcuAssist")
         st.write("This application helps generate comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on patient information and symptoms.")
-        if st.button("Enter Patient Information"):
-            st.session_state.page = "patient_info"
-            st.experimental_rerun()
         if st.button("Clear Patient Data"):
             clear_patient_data()
 
-    elif page == "Patient Information":
+    elif st.session_state.page == "patient_info":
         patient_info_page()
         if st.session_state.get('generate_report', False):
             # Generate the report
@@ -161,7 +172,7 @@ def main():
             st.session_state.page = "view_report"
             st.experimental_rerun()
 
-    elif page == "View Report":
+    elif st.session_state.page == "view_report":
         st.title("TCM Diagnostic Report")
         if 'generated_report' in st.session_state and st.session_state.generated_report:
             st.write(st.session_state.generated_report)
