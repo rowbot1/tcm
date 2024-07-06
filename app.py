@@ -6,7 +6,9 @@ import json
 import time
 
 # Import the patient_info_page function
-from pages.1_Patient_Information import patient_info_page
+from pages.patient_information import patient_info_page
+
+# Rest of your app.py code remains the same...
 
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")
