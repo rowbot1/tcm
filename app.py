@@ -8,8 +8,10 @@ from io import BytesIO
 from docx import Document
 from docx.shared import Inches
 
-# Import the patient_info_page function
-from patient_information import patient_info_page
+# Update this import statement to match your file structure
+from pages.patient_information import patient_info_page
+
+# Rest of your app.py code remains the same...
 
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")
@@ -18,6 +20,7 @@ st.set_page_config(page_title="AcuAssist", layout="wide")
 PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 INDEX_NAME = "tcmapp"
+
 
 # Initialize Pinecone client
 @st.cache_resource
