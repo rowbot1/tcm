@@ -8,8 +8,7 @@ from io import BytesIO
 from docx import Document
 from docx.shared import Inches
 
-# Import the patient_info_page function
-from patient_information import patient_info_page
+from patient_information import patient_info_page  # Import from your separate file
 
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")
@@ -35,108 +34,24 @@ def init_embedding_model():
 def init_groq_client():
     return groq.Client(api_key=GROQ_API_KEY)
 
+
 # Initialize resources
 index = init_pinecone()
 embedding_model = init_embedding_model()
 groq_client = init_groq_client()
 
-# Function to clear patient data
-def clear_patient_data():
-    for key in list(st.session_state.keys()):
-        if key.startswith('patient_') or key in ['generated_report']:
-            del st.session_state[key]
-    st.session_state.patient_info = {}  # Reinitialize patient_info as an empty dict
-    st.success("Patient data has been cleared.")
+# ... (rest of your functions: clear_patient_data, query_pinecone, generate_diagnostic_report_part, 
+#      generate_diagnostic_report, create_word_document are the same) ...
 
-# Function to query Pinecone
-@st.cache_data
-def query_pinecone(query_text, top_k=5):
-    query_vector = embedding_model.encode(query_text).tolist()
-    results = index.query(vector=query_vector, top_k=top_k, include_metadata=True)
-    return results
 
-# Function to generate diagnostic report part
-def generate_diagnostic_report_part(system_message, user_message):
-    try:
-        response = groq_client.chat.completions.create(
-            model="mixtral-8x7b-32768",
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7,
-            max_tokens=4000,
-            top_p=1,
-            stop=None,
-            stream=False
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        return None
-
-# Function to generate a full diagnostic report
-def generate_diagnostic_report(context, user_input):
-    system_message = "You are a world-renowned Traditional Chinese Medicine practitioner with decades of experience and deep knowledge of both traditional and modern TCM practices. Your diagnostic reports are known for their exceptional detail, insight, and thoroughness."
-    
-    report_sections = [
-        "1. Case Abstract",
-        "2. Case Study",
-        "3. TCM Diagnosis",
-        "4. Diagnosis and Treatment Plan",
-        "5. TCM Pattern Differentiation Diagram",
-        "6. References"
-    ]
-    
-    full_report = ""
-    progress_bar = st.progress(0)
-    
-    for i, section in enumerate(report_sections):
-        user_message = f"""
-        Based on the following patient information and context, generate a comprehensive and detailed TCM diagnostic report section for: {section}
-
-        Ensure your response is extremely thorough and professional, demonstrating deep understanding of TCM principles and providing well-reasoned insights.
-
-        Context: {context}
-
-        Patient Input: {user_input}
-
-        Generate the {section} of the TCM Diagnostic Report:
-        """
-        
-        with st.spinner(f"Generating {section}..."):
-            section_content = generate_diagnostic_report_part(system_message, user_message)
-            if section_content:
-                full_report += f"\n\n{section}\n{section_content}"
-            else:
-                st.warning(f"Failed to generate {section}. Moving to the next section.")
-        
-        progress_bar.progress((i + 1) / len(report_sections))
-        time.sleep(1)  # Add a small delay to avoid rate limiting
-    
-    return full_report
-
-# Function to create Word document
-def create_word_document(report):
-    doc = Document()
-    doc.add_heading('TCM Diagnostic Report', 0)
-    
-    for line in report.split('\n'):
-        if line.startswith('#'):
-            level = line.count('#')
-            doc.add_heading(line.strip('#').strip(), level)
-        else:
-            doc.add_paragraph(line)
-    
-    return doc
 
 # Navigation function
 def navigation():
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)  
     with col1:
         if st.button("Home"):
-            st.session_state.page = "home"
-            st.experimental_rerun()
+            st.session_state.page = "home"  
+            st.experimental_rerun()   
     with col2:
         if st.button("Patient Information"):
             st.session_state.page = "patient_info"
@@ -145,6 +60,7 @@ def navigation():
         if st.button("View Report"):
             st.session_state.page = "view_report"
             st.experimental_rerun()
+
 
 # Main app logic
 def main():
@@ -195,5 +111,7 @@ def main():
         else:
             st.warning("No report has been generated yet. Please enter patient information and generate a report first.")
 
+
 if __name__ == "__main__":
     main()
+
