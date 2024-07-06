@@ -139,4 +139,50 @@ def patient_info_page():
     st.subheader("Tongue Diagnosis")
     tongue_color = st.selectbox("Tongue Color", ["Not analysed", "Pale", "Pink", "Red", "Purple", "Blue"], index=["Not analysed", "Pale", "Pink", "Red", "Purple", "Blue"].index(st.session_state.patient_info.get('tongue_color', 'Not analysed')))
     tongue_coating = st.selectbox("Tongue Coating", ["None", "Thin", "Thick", "White", "Yellow", "Grey", "Black"], index=["None", "Thin", "Thick", "White", "Yellow", "Grey", "Black"].index(st.session_state.patient_info.get('tongue_coating', 'None')))
-    tongue_shape = st.multiselect("Tongue Shape", ["Normal", "Swollen
+    tongue_shape = st.multiselect("Tongue Shape", ["Normal", "Swollen", "Thin", "Cracked", "Tooth-marked"], default=st.session_state.patient_info.get('tongue_shape', []))
+    tongue_moisture = st.selectbox("Tongue Moisture", ["Normal", "Dry", "Wet"], index=["Normal", "Dry", "Wet"].index(st.session_state.patient_info.get('tongue_moisture', 'Normal')))
+
+    # Auto-save function for Tongue Diagnosis
+    def auto_save_tongue():
+        st.session_state.patient_info.update({
+            'tongue_color': tongue_color,
+            'tongue_coating': tongue_coating,
+            'tongue_shape': tongue_shape,
+            'tongue_moisture': tongue_moisture,
+        })
+
+    auto_save_tongue()
+    st.session_state["Tongue Diagnosis_complete"] = True
+
+    # Pulse Diagnosis
+    st.subheader("Pulse Diagnosis")
+    pulse_rate = st.number_input("Pulse Rate (BPM)", min_value=40, max_value=200, value=st.session_state.patient_info.get('pulse_rate', 70))
+    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "String-like", "Slippery", "Rough", "Thin", "Weak", "Strong"], default=st.session_state.patient_info.get('pulse_quality', []))
+
+    # Auto-save function for Pulse Diagnosis
+    def auto_save_pulse():
+        st.session_state.patient_info.update({
+            'pulse_rate': pulse_rate,
+            'pulse_quality': pulse_quality,
+        })
+
+    auto_save_pulse()
+    st.session_state["Pulse Diagnosis_complete"] = True
+
+    # Additional Symptoms
+    st.subheader("Additional Symptoms")
+    additional_symptoms = st.text_area("Any other symptoms or concerns", st.session_state.patient_info.get('additional_symptoms', ''), height=150)
+
+    # Auto-save function for Additional Symptoms
+    def auto_save_additional():
+        st.session_state.patient_info['additional_symptoms'] = additional_symptoms
+
+    auto_save_additional()
+    st.session_state["Additional Symptoms_complete"] = True
+
+    # Add a manual save button for user reassurance
+    if st.button("Save All Information"):
+        st.success("All patient information saved successfully!")
+
+# This line is not needed if this file is imported as a module
+# patient_info_page()
