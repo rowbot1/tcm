@@ -9,7 +9,7 @@ from docx import Document
 from docx.shared import Inches
 
 # Import the patient_info_page function
-from pages.patient_information import patient_info_page
+from patient_information import patient_info_page
 
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")
@@ -130,45 +130,25 @@ def create_word_document(report):
     
     return doc
 
-# View Report Page
-def view_report_page():
-    st.title("View TCM Diagnostic Report")
-    
-    if st.button("Back to Patient Information"):
-        st.session_state.page = "Patient Information"
-        st.experimental_rerun()
-    
-    if 'generated_report' in st.session_state and st.session_state.generated_report:
-        st.write(st.session_state.generated_report)
-        
-        # Create Word document
-        doc = create_word_document(st.session_state.generated_report)
-        
-        # Save document to BytesIO object
-        docx_file = BytesIO()
-        doc.save(docx_file)
-        docx_file.seek(0)
-        
-        # Create download button
-        st.download_button(
-            label="Download Report as Word Document",
-            data=docx_file,
-            file_name="TCM_Diagnostic_Report.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-    else:
-        st.warning("No report has been generated yet. Please generate a report first.")
-
 # Main app logic
 def main():
     if 'page' not in st.session_state:
-        st.session_state.page = "Patient Information"
-    
-    # Initialize patient_info if it doesn't exist
-    if 'patient_info' not in st.session_state:
-        st.session_state.patient_info = {}
+        st.session_state.page = "home"
 
-    if st.session_state.page == "Patient Information":
+    # Navigation
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio("Go to", ["Home", "Patient Information", "View Report"])
+
+    if page == "Home":
+        st.title("Welcome to AcuAssist")
+        st.write("This application helps generate comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on patient information and symptoms.")
+        if st.button("Enter Patient Information"):
+            st.session_state.page = "patient_info"
+            st.experimental_rerun()
+        if st.button("Clear Patient Data"):
+            clear_patient_data()
+
+    elif page == "Patient Information":
         patient_info_page()
         if st.session_state.get('generate_report', False):
             # Generate the report
@@ -178,10 +158,31 @@ def main():
             report = generate_diagnostic_report(context, user_input)
             st.session_state.generated_report = report
             st.session_state.generate_report = False  # Reset the flag
-            st.session_state.page = "View Report"
+            st.session_state.page = "view_report"
             st.experimental_rerun()
-    elif st.session_state.page == "View Report":
-        view_report_page()
+
+    elif page == "View Report":
+        st.title("TCM Diagnostic Report")
+        if 'generated_report' in st.session_state and st.session_state.generated_report:
+            st.write(st.session_state.generated_report)
+            
+            # Create Word document
+            doc = create_word_document(st.session_state.generated_report)
+            
+            # Save document to BytesIO object
+            docx_file = BytesIO()
+            doc.save(docx_file)
+            docx_file.seek(0)
+            
+            # Create download button
+            st.download_button(
+                label="Download Report as Word Document",
+                data=docx_file,
+                file_name="TCM_Diagnostic_Report.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+        else:
+            st.warning("No report has been generated yet. Please enter patient information and generate a report first.")
 
 if __name__ == "__main__":
     main()
