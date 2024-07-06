@@ -5,6 +5,9 @@ from sentence_transformers import SentenceTransformer
 import json
 import time
 
+# Import the patient_info_page function
+from pages.1_Patient_Information import patient_info_page
+
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")
 
@@ -41,74 +44,6 @@ def clear_patient_data():
             del st.session_state[key]
     st.success("Patient data has been cleared.")
 
-# Function to query Pinecone
-@st.cache_data
-def query_pinecone(query_text, top_k=5):
-    query_vector = embedding_model.encode(query_text).tolist()
-    results = index.query(vector=query_vector, top_k=top_k, include_metadata=True)
-    return results
-
-# Function to generate diagnostic report part
-def generate_diagnostic_report_part(system_message, user_message):
-    try:
-        response = groq_client.chat.completions.create(
-            model="mixtral-8x7b-32768",
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7,
-            max_tokens=4000,
-            top_p=1,
-            stop=None,
-            stream=False
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        return None
-
-# Function to generate a full diagnostic report
-def generate_diagnostic_report(context, user_input):
-    system_message = "You are a world-renowned Traditional Chinese Medicine practitioner with decades of experience and deep knowledge of both traditional and modern TCM practices. Your diagnostic reports are known for their exceptional detail, insight, and thoroughness."
-    
-    report_sections = [
-        "1. Case Abstract",
-        "2. Case Study",
-        "3. TCM Diagnosis",
-        "4. Diagnosis and Treatment Plan",
-        "5. TCM Pattern Differentiation Diagram",
-        "6. References"
-    ]
-    
-    full_report = ""
-    progress_bar = st.progress(0)
-    
-    for i, section in enumerate(report_sections):
-        user_message = f"""
-        Based on the following patient information and context, generate a comprehensive and detailed TCM diagnostic report section for: {section}
-
-        Ensure your response is extremely thorough and professional, demonstrating deep understanding of TCM principles and providing well-reasoned insights.
-
-        Context: {context}
-
-        Patient Input: {user_input}
-
-        Generate the {section} of the TCM Diagnostic Report:
-        """
-        
-        with st.spinner(f"Generating {section}..."):
-            section_content = generate_diagnostic_report_part(system_message, user_message)
-            if section_content:
-                full_report += f"\n\n{section}\n{section_content}"
-            else:
-                st.warning(f"Failed to generate {section}. Moving to the next section.")
-        
-        progress_bar.progress((i + 1) / len(report_sections))
-        time.sleep(1)  # Add a small delay to avoid rate limiting
-    
-    return full_report
-
 # Home page
 def home_page():
     st.title("Welcome To AcuAssist")
@@ -144,16 +79,6 @@ def home_page():
     This app is for informational purposes only and does not replace professional medical advice. 
     Always consult with a qualified TCM practitioner or healthcare provider for proper diagnosis and treatment.
     """)
-
-# Patient Information Page
-def patient_info_page():
-    st.title("Patient Information")
-    # Add your patient information form here
-    # ...
-
-    if st.button("Back to Home"):
-        st.session_state.page = "Home"
-        st.experimental_rerun()
 
 # Generate Report Page
 def generate_report_page():

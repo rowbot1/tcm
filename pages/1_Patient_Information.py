@@ -4,6 +4,11 @@ import datetime
 def patient_info_page():
     st.title("Patient Information")
 
+    # Add "Back to Home" button at the top
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.experimental_rerun()
+
     # Define the sections of your form
     sections = ["Basic Information", "Presenting Complaint", "Medical History & Lifestyle", "10 Questions for Internal Diseases", "Tongue Diagnosis", "Pulse Diagnosis", "Additional Symptoms"]
     
@@ -179,5 +184,6 @@ def patient_info_page():
     if st.button("Save All Information"):
         st.success("All patient information saved successfully!")
 
-# Call the function
-patient_info_page()
+# Modify this part to work with the new navigation system
+if __name__ == "__main__":
+    patient_info_page()
