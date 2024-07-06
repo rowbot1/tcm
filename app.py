@@ -124,7 +124,7 @@ def view_report_page():
         st.experimental_rerun()
 
 # Main app logic
- Main app logic
+
 def main():
     if 'page' not in st.session_state:
         st.session_state.page = "Home"
