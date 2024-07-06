@@ -9,18 +9,21 @@ def patient_info_page():
         st.session_state.page = "Home"
         st.experimental_rerun()
 
-    # Define the sections of your form
-    sections = ["Basic Information", "Presenting Complaint", "Medical History & Lifestyle", "10 Questions for Internal Diseases", "Tongue Diagnosis", "Pulse Diagnosis", "Additional Symptoms"]
-    
     # Initialize session state for patient info if not exists
     if 'patient_info' not in st.session_state:
         st.session_state.patient_info = {}
 
-    # Calculate progress
-    completed_sections = sum(1 for section in sections if st.session_state.get(f"{section}_complete", False))
-    progress = completed_sections / len(sections)
+    # Define the sections of your form
+    sections = ["Basic Information", "Presenting Complaint", "Medical History & Lifestyle", "10 Questions for Internal Diseases", "Tongue Diagnosis", "Pulse Diagnosis", "Additional Symptoms"]
+    
+    # Function to calculate progress
+    def calculate_progress():
+        filled_fields = sum(1 for field, value in st.session_state.patient_info.items() if value)
+        total_fields = len(st.session_state.patient_info)
+        return filled_fields / total_fields if total_fields > 0 else 0
 
     # Display progress bar
+    progress = calculate_progress()
     st.progress(progress)
     st.write(f"Progress: {progress:.0%}")
 
@@ -57,17 +60,13 @@ def patient_info_page():
     occupation = st.text_input("Occupation", st.session_state.patient_info.get('occupation', ''))
 
     # Auto-save function for Basic Information
-    def auto_save_basic():
-        st.session_state.patient_info.update({
-            'name': name,
-            'dob': dob_str,
-            'age': age,
-            'gender': gender,
-            'occupation': occupation,
-        })
-
-    auto_save_basic()
-    st.session_state["Basic Information_complete"] = True
+    st.session_state.patient_info.update({
+        'name': name,
+        'dob': dob_str,
+        'age': age,
+        'gender': gender,
+        'occupation': occupation,
+    })
 
     # Presenting Complaint
     st.subheader("Presenting Complaint")
@@ -75,14 +74,10 @@ def patient_info_page():
     complaint_background = st.text_area("Background of Main Complaint (including aggravating and relieving factors)", st.session_state.patient_info.get('complaint_background', ''), height=150)
 
     # Auto-save function for Presenting Complaint
-    def auto_save_complaint():
-        st.session_state.patient_info.update({
-            'chief_complaint': chief_complaint,
-            'complaint_background': complaint_background,
-        })
-
-    auto_save_complaint()
-    st.session_state["Presenting Complaint_complete"] = True
+    st.session_state.patient_info.update({
+        'chief_complaint': chief_complaint,
+        'complaint_background': complaint_background,
+    })
 
     # Medical History & Lifestyle
     st.subheader("Medical History & Lifestyle")
@@ -91,15 +86,11 @@ def patient_info_page():
     current_medications = st.text_area("Current Medications", st.session_state.patient_info.get('current_medications', ''), height=100)
 
     # Auto-save function for Medical History & Lifestyle
-    def auto_save_medical():
-        st.session_state.patient_info.update({
-            'medical_history': medical_history,
-            'lifestyle': lifestyle,
-            'current_medications': current_medications,
-        })
-
-    auto_save_medical()
-    st.session_state["Medical History & Lifestyle_complete"] = True
+    st.session_state.patient_info.update({
+        'medical_history': medical_history,
+        'lifestyle': lifestyle,
+        'current_medications': current_medications,
+    })
 
     # 10 Questions for Internal Diseases
     st.subheader("10 Questions for Internal Diseases")
@@ -115,25 +106,16 @@ def patient_info_page():
         "Thirst & drink preferences",
         "Pain (type, quality & location)"
     ]
-    answers = {}
     for question in questions:
         col1, col2 = st.columns([3, 1])
         with col1:
             st.write(question)
         with col2:
-            answers[question] = st.selectbox(f"Answer for: {question}", ["No", "Yes"], key=question, index=0 if st.session_state.patient_info.get(f'{question}_answer', 'No') == 'No' else 1)
-        if answers[question] == "Yes":
-            answers[f"{question}_details"] = st.text_area(f"Details for {question}", st.session_state.patient_info.get(f'{question}_details', ''), height=100, key=f"{question}_details")
-
-    # Auto-save function for 10 Questions
-    def auto_save_questions():
-        for question in questions:
-            st.session_state.patient_info[f'{question}_answer'] = answers[question]
-            if answers[question] == "Yes":
-                st.session_state.patient_info[f'{question}_details'] = answers[f"{question}_details"]
-
-    auto_save_questions()
-    st.session_state["10 Questions for Internal Diseases_complete"] = True
+            answer = st.selectbox(f"Answer for: {question}", ["No", "Yes"], key=question, index=0 if st.session_state.patient_info.get(f'{question}_answer', 'No') == 'No' else 1)
+        if answer == "Yes":
+            details = st.text_area(f"Details for {question}", st.session_state.patient_info.get(f'{question}_details', ''), height=100, key=f"{question}_details")
+            st.session_state.patient_info[f'{question}_details'] = details
+        st.session_state.patient_info[f'{question}_answer'] = answer
 
     # Tongue Diagnosis
     st.subheader("Tongue Diagnosis")
@@ -143,16 +125,12 @@ def patient_info_page():
     tongue_moisture = st.selectbox("Tongue Moisture", ["Normal", "Dry", "Wet"], index=["Normal", "Dry", "Wet"].index(st.session_state.patient_info.get('tongue_moisture', 'Normal')))
 
     # Auto-save function for Tongue Diagnosis
-    def auto_save_tongue():
-        st.session_state.patient_info.update({
-            'tongue_color': tongue_color,
-            'tongue_coating': tongue_coating,
-            'tongue_shape': tongue_shape,
-            'tongue_moisture': tongue_moisture,
-        })
-
-    auto_save_tongue()
-    st.session_state["Tongue Diagnosis_complete"] = True
+    st.session_state.patient_info.update({
+        'tongue_color': tongue_color,
+        'tongue_coating': tongue_coating,
+        'tongue_shape': tongue_shape,
+        'tongue_moisture': tongue_moisture,
+    })
 
     # Pulse Diagnosis
     st.subheader("Pulse Diagnosis")
@@ -160,29 +138,30 @@ def patient_info_page():
     pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "String-like", "Slippery", "Rough", "Thin", "Weak", "Strong"], default=st.session_state.patient_info.get('pulse_quality', []))
 
     # Auto-save function for Pulse Diagnosis
-    def auto_save_pulse():
-        st.session_state.patient_info.update({
-            'pulse_rate': pulse_rate,
-            'pulse_quality': pulse_quality,
-        })
-
-    auto_save_pulse()
-    st.session_state["Pulse Diagnosis_complete"] = True
+    st.session_state.patient_info.update({
+        'pulse_rate': pulse_rate,
+        'pulse_quality': pulse_quality,
+    })
 
     # Additional Symptoms
     st.subheader("Additional Symptoms")
     additional_symptoms = st.text_area("Any other symptoms or concerns", st.session_state.patient_info.get('additional_symptoms', ''), height=150)
 
     # Auto-save function for Additional Symptoms
-    def auto_save_additional():
-        st.session_state.patient_info['additional_symptoms'] = additional_symptoms
-
-    auto_save_additional()
-    st.session_state["Additional Symptoms_complete"] = True
+    st.session_state.patient_info['additional_symptoms'] = additional_symptoms
 
     # Add a manual save button for user reassurance
     if st.button("Save All Information"):
         st.success("All patient information saved successfully!")
 
+    # Add Generate Report button
+    if st.button("Generate Report"):
+        st.session_state.page = "Generate Report"
+        st.experimental_rerun()
+
 # This line is not needed if this file is imported as a module
 # patient_info_page()
+# Add Generate Report button
+if st.button("Generate Report"):
+    st.session_state.generate_report = True
+    st.experimental_rerun()
