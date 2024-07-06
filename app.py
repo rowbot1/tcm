@@ -7,6 +7,8 @@ import time
 from io import BytesIO
 from docx import Document
 from docx.shared import Inches
+import sys
+sys.path.append(".") 
 
 from patient_information import patient_info_page  # Import from your separate file
 
