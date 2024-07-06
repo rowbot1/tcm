@@ -109,50 +109,51 @@ def generate_diagnostic_report(context, user_input):
     
     return full_report
 
+# Home page
+def home_page():
+    st.title("Welcome To AcuAssist")
+    st.write("""
+    This application helps generate comprehensive Traditional Chinese Medicine (TCM) 
+    diagnostic reports based on patient information and symptoms.
+    """)
+
+    st.write("Please choose an option:")
+
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("Enter Patient Information"):
+            st.session_state.page = "Patient Information"
+            st.experimental_rerun()
+    
+    with col2:
+        if st.button("Generate Report"):
+            st.session_state.page = "Generate Report"
+            st.experimental_rerun()
+    
+    with col3:
+        if st.button("View Report"):
+            st.session_state.page = "View Report"
+            st.experimental_rerun()
+
+    if st.button("Clear Patient Data"):
+        clear_patient_data()
+
+    st.markdown("""
+    ### Disclaimer
+    This app is for informational purposes only and does not replace professional medical advice. 
+    Always consult with a qualified TCM practitioner or healthcare provider for proper diagnosis and treatment.
+    """)
+
 # Patient Information Page
 def patient_info_page():
     st.title("Patient Information")
+    # Add your patient information form here
+    # ...
 
-    # Define the sections of your form
-    sections = ["Basic Information", "Presenting Complaint", "Medical History & Lifestyle", "10 Questions for Internal Diseases", "Tongue Diagnosis", "Pulse Diagnosis", "Additional Symptoms"]
-    
-    # Calculate progress
-    completed_sections = sum(1 for section in sections if st.session_state.get(f"{section}_complete", False))
-    progress = completed_sections / len(sections)
-
-    # Display progress bar
-    st.progress(progress)
-    st.write(f"Progress: {progress:.0%}")
-
-    # Initialize session state for patient info if not exists
-    if 'patient_info' not in st.session_state:
-        st.session_state.patient_info = {}
-
-    # Basic Information
-    st.subheader("Basic Information")
-    name = st.text_input("Patient Name", st.session_state.patient_info.get('name', ''))
-    st.session_state.patient_info['name'] = name
-
-    # Add other fields here...
-
-    # Auto-save function
-    def auto_save():
-        st.session_state.patient_info = {
-            'name': name,
-            # Add other fields here...
-        }
-
-    # Call auto_save function whenever any form field changes
-    st.session_state.patient_info = auto_save()
-
-    # Add a manual save button for user reassurance
-    if st.button("Save Information"):
-        st.success("Patient information saved successfully!")
-
-    # Mark section as complete
-    st.session_state["Basic Information_complete"] = True
-
-    # Repeat similar structure for other sections...
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.experimental_rerun()
 
 # Generate Report Page
 def generate_report_page():
@@ -180,56 +181,34 @@ def generate_report_page():
             
             st.write("Report generated successfully. Go to the 'View Report' page to see and download the report.")
     else:
-        st.warning("No patient information found. Please enter patient information in the 'Patient Information' page first.")
+        st.warning("No patient information found. Please enter patient information first.")
+
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.experimental_rerun()
+
+# View Report Page
+def view_report_page():
+    st.title("View TCM Diagnostic Report")
+    # Add code for viewing the report here...
+
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.experimental_rerun()
 
 # Main app logic
 def main():
-    st.title("Welcome To AcuAssist")
+    if 'page' not in st.session_state:
+        st.session_state.page = "Home"
 
-    # Sidebar navigation
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Patient Information", "Generate Report", "View Report"])
-
-    if page == "Home":
-        st.write("""
-        Welcome to the AcuAssist. This application helps generate 
-        comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on 
-        patient information and symptoms.
-
-        Please use the sidebar to navigate through different sections of the application:
-
-        1. Patient Information: Enter patient details and symptoms
-        2. Generate Report: Review entered information and generate the TCM diagnostic report
-        3. View Report: View and download the generated report
-
-        Get started by entering patient information in the 'Patient Information' page.
-        """)
-
-        # Add a button to navigate to the Patient Information page
-        if st.button("Go to Patient Information"):
-            st.session_state.page = "Patient Information"
-            st.experimental_rerun()
-
-        # Add Clear Patient Data button
-        if st.button("Clear Patient Data"):
-            clear_patient_data()
-
-        # Add the disclaimer at the bottom of the main content
-        st.markdown("""
-        ### Disclaimer
-        This app is for informational purposes only and does not replace professional medical advice. 
-        Always consult with a qualified TCM practitioner or healthcare provider for proper diagnosis and treatment.
-        """)
-
-    elif page == "Patient Information":
+    if st.session_state.page == "Home":
+        home_page()
+    elif st.session_state.page == "Patient Information":
         patient_info_page()
-
-    elif page == "Generate Report":
+    elif st.session_state.page == "Generate Report":
         generate_report_page()
-
-    elif page == "View Report":
-        st.title("View TCM Diagnostic Report")
-        # Add code for viewing the report here...
+    elif st.session_state.page == "View Report":
+        view_report_page()
 
 if __name__ == "__main__":
     main()
