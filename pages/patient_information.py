@@ -4,10 +4,16 @@ import datetime
 def patient_info_page():
     st.title("Patient Information")
 
-    # Add "Back to Home" button at the top
-    if st.button("Back to Home"):
-        st.session_state.page = "Home"
-        st.experimental_rerun()
+    # Add navigation buttons at the top
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Back to Home"):
+            st.session_state.page = "Home"
+            st.experimental_rerun()
+    with col2:
+        if st.button("View Report"):
+            st.session_state.page = "View Report"
+            st.experimental_rerun()
 
     # Initialize session state for patient info if not exists
     if 'patient_info' not in st.session_state:
@@ -18,8 +24,23 @@ def patient_info_page():
     
     # Function to calculate progress
     def calculate_progress():
-        filled_fields = sum(1 for field, value in st.session_state.patient_info.items() if value)
-        total_fields = len(st.session_state.patient_info)
+        total_fields = 0
+        filled_fields = 0
+        for key, value in st.session_state.patient_info.items():
+            if key not in ['tongue_shape', 'pulse_quality']:  # These are lists and should be handled differently
+                total_fields += 1
+                if value:
+                    filled_fields += 1
+            elif key in ['tongue_shape', 'pulse_quality'] and value:
+                total_fields += 1
+                filled_fields += 1
+        
+        # Add fields for 10 Questions
+        for i in range(10):
+            total_fields += 1
+            if st.session_state.patient_info.get(f'question_{i}_answer'):
+                filled_fields += 1
+        
         return filled_fields / total_fields if total_fields > 0 else 0
 
     # Display progress bar
@@ -106,16 +127,16 @@ def patient_info_page():
         "Thirst & drink preferences",
         "Pain (type, quality & location)"
     ]
-    for question in questions:
+    for i, question in enumerate(questions):
         col1, col2 = st.columns([3, 1])
         with col1:
             st.write(question)
         with col2:
-            answer = st.selectbox(f"Answer for: {question}", ["No", "Yes"], key=question, index=0 if st.session_state.patient_info.get(f'{question}_answer', 'No') == 'No' else 1)
+            answer = st.selectbox(f"Answer for: {question}", ["No", "Yes"], key=f"question_{i}", index=0 if st.session_state.patient_info.get(f'question_{i}_answer', 'No') == 'No' else 1)
         if answer == "Yes":
-            details = st.text_area(f"Details for {question}", st.session_state.patient_info.get(f'{question}_details', ''), height=100, key=f"{question}_details")
-            st.session_state.patient_info[f'{question}_details'] = details
-        st.session_state.patient_info[f'{question}_answer'] = answer
+            details = st.text_area(f"Details for {question}", st.session_state.patient_info.get(f'question_{i}_details', ''), height=100, key=f"question_{i}_details")
+            st.session_state.patient_info[f'question_{i}_details'] = details
+        st.session_state.patient_info[f'question_{i}_answer'] = answer
 
     # Tongue Diagnosis
     st.subheader("Tongue Diagnosis")
@@ -150,18 +171,14 @@ def patient_info_page():
     # Auto-save function for Additional Symptoms
     st.session_state.patient_info['additional_symptoms'] = additional_symptoms
 
-    # Add a manual save button for user reassurance
-    if st.button("Save All Information"):
-        st.success("All patient information saved successfully!")
-
-    # Add Generate Report button
+    # Generate Report button
     if st.button("Generate Report"):
-        st.session_state.page = "Generate Report"
-        st.experimental_rerun()
+        if st.session_state.patient_info:
+            st.session_state.generate_report = True
+            st.session_state.page = "View Report"
+            st.experimental_rerun()
+        else:
+            st.warning("Please fill in patient information before generating a report.")
 
 # This line is not needed if this file is imported as a module
 # patient_info_page()
-# Add Generate Report button
-if st.button("Generate Report"):
-    st.session_state.generate_report = True
-    st.experimental_rerun()

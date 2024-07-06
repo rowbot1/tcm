@@ -4,6 +4,9 @@ import groq
 from sentence_transformers import SentenceTransformer
 import json
 import time
+from io import BytesIO
+from docx import Document
+from docx.shared import Inches
 
 # Import the patient_info_page function
 from pages.patient_information import patient_info_page
@@ -113,6 +116,20 @@ def generate_diagnostic_report(context, user_input):
     
     return full_report
 
+# Function to create Word document
+def create_word_document(report):
+    doc = Document()
+    doc.add_heading('TCM Diagnostic Report', 0)
+    
+    for line in report.split('\n'):
+        if line.startswith('#'):
+            level = line.count('#')
+            doc.add_heading(line.strip('#').strip(), level)
+        else:
+            doc.add_paragraph(line)
+    
+    return doc
+
 # Home page
 def home_page():
     st.title("Welcome To AcuAssist")
@@ -123,7 +140,7 @@ def home_page():
 
     st.write("Please choose an option:")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         if st.button("Enter Patient Information"):
@@ -134,9 +151,10 @@ def home_page():
         if st.button("View Report"):
             st.session_state.page = "View Report"
             st.experimental_rerun()
-
-    if st.button("Clear Patient Data"):
-        clear_patient_data()
+    
+    with col3:
+        if st.button("Clear Patient Data"):
+            clear_patient_data()
 
     st.markdown("""
     ### Disclaimer
@@ -147,15 +165,38 @@ def home_page():
 # View Report Page
 def view_report_page():
     st.title("View TCM Diagnostic Report")
+    
+    # Add navigation buttons at the top
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Back to Home"):
+            st.session_state.page = "Home"
+            st.experimental_rerun()
+    with col2:
+        if st.button("Enter New Patient Information"):
+            st.session_state.page = "Patient Information"
+            st.experimental_rerun()
+    
     if 'generated_report' in st.session_state and st.session_state.generated_report:
         st.write(st.session_state.generated_report)
-        # Add download button or other functionality here
+        
+        # Create Word document
+        doc = create_word_document(st.session_state.generated_report)
+        
+        # Save document to BytesIO object
+        docx_file = BytesIO()
+        doc.save(docx_file)
+        docx_file.seek(0)
+        
+        # Create download button
+        st.download_button(
+            label="Download Report as Word Document",
+            data=docx_file,
+            file_name="TCM_Diagnostic_Report.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
     else:
         st.warning("No report has been generated yet. Please generate a report first.")
-
-    if st.button("Back to Home"):
-        st.session_state.page = "Home"
-        st.experimental_rerun()
 
 # Main app logic
 def main():
@@ -170,27 +211,6 @@ def main():
         home_page()
     elif st.session_state.page == "Patient Information":
         patient_info_page()
-        # Check if the Generate Report button was clicked
-        if st.session_state.get('generate_report', False):
-            st.session_state.generate_report = False  # Reset the flag
-            if st.session_state.patient_info:
-                user_input = json.dumps(st.session_state.patient_info, indent=2)
-                
-                # Query Pinecone for relevant context
-                query_results = query_pinecone(user_input)
-                context = "\n".join([match['metadata']['text'] for match in query_results['matches'] if 'text' in match['metadata']])
-                
-                with st.spinner("Generating TCM Diagnostic Report..."):
-                    report = generate_diagnostic_report(context, user_input)
-                
-                # Save the report to session state
-                st.session_state.generated_report = report
-                
-                st.success("Report generated successfully. You can now view the report.")
-                st.session_state.page = "View Report"
-                st.experimental_rerun()
-            else:
-                st.warning("No patient information found. Please enter patient information first.")
     elif st.session_state.page == "View Report":
         view_report_page()
 
