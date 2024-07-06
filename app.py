@@ -130,52 +130,13 @@ def create_word_document(report):
     
     return doc
 
-# Home page
-def home_page():
-    st.title("Welcome To AcuAssist")
-    st.write("""
-    This application helps generate comprehensive Traditional Chinese Medicine (TCM) 
-    diagnostic reports based on patient information and symptoms.
-    """)
-
-    st.write("Please choose an option:")
-
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("Enter Patient Information"):
-            st.session_state.page = "Patient Information"
-            st.experimental_rerun()
-    
-    with col2:
-        if st.button("View Report"):
-            st.session_state.page = "View Report"
-            st.experimental_rerun()
-    
-    with col3:
-        if st.button("Clear Patient Data"):
-            clear_patient_data()
-
-    st.markdown("""
-    ### Disclaimer
-    This app is for informational purposes only and does not replace professional medical advice. 
-    Always consult with a qualified TCM practitioner or healthcare provider for proper diagnosis and treatment.
-    """)
-
 # View Report Page
 def view_report_page():
     st.title("View TCM Diagnostic Report")
     
-    # Add navigation buttons at the top
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Back to Home"):
-            st.session_state.page = "Home"
-            st.experimental_rerun()
-    with col2:
-        if st.button("Enter New Patient Information"):
-            st.session_state.page = "Patient Information"
-            st.experimental_rerun()
+    if st.button("Back to Patient Information"):
+        st.session_state.page = "Patient Information"
+        st.experimental_rerun()
     
     if 'generated_report' in st.session_state and st.session_state.generated_report:
         st.write(st.session_state.generated_report)
@@ -201,15 +162,13 @@ def view_report_page():
 # Main app logic
 def main():
     if 'page' not in st.session_state:
-        st.session_state.page = "Home"
+        st.session_state.page = "Patient Information"
     
     # Initialize patient_info if it doesn't exist
     if 'patient_info' not in st.session_state:
         st.session_state.patient_info = {}
 
-    if st.session_state.page == "Home":
-        home_page()
-    elif st.session_state.page == "Patient Information":
+    if st.session_state.page == "Patient Information":
         patient_info_page()
         if st.session_state.get('generate_report', False):
             # Generate the report

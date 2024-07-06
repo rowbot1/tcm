@@ -4,11 +4,6 @@ import datetime
 def patient_info_page():
     st.title("Patient Information")
 
-    # Add navigation button at the top
-    if st.button("Back to Home"):
-        st.session_state.page = "Home"
-        st.experimental_rerun()
-
     # Initialize session state for patient info if not exists
     if 'patient_info' not in st.session_state:
         st.session_state.patient_info = {}
@@ -28,7 +23,6 @@ def patient_info_page():
     progress = calculate_progress()
     st.progress(progress)
     st.write(f"Progress: {progress:.0%}")
-
 
     # Function to calculate age
     def calculate_age(born):
@@ -137,22 +131,12 @@ def patient_info_page():
 
     # Generate Report button
     if st.button("Generate Report"):
-        if st.session_state.patient_info:
-            st.session_state.generate_report = True
-            st.session_state.page = "View Report"
-            st.experimental_rerun()
-        else:
-            st.warning("Please fill in patient information before generating a report.")
-
-             # Generate Report button
-    if st.button("Generate Report"):
         if calculate_progress() > 0.5:  # Require at least 50% completion
             st.session_state.generate_report = True
             st.session_state.page = "View Report"
             st.experimental_rerun()
         else:
-            st.warning("Please fill in more patient information before generating a report.")
+            st.warning("Please fill in more patient information before generating a report. At least 50% completion is required.")
 
 # This line is not needed if this file is imported as a module
 # patient_info_page()
-
