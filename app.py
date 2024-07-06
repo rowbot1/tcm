@@ -9,7 +9,7 @@ from docx import Document
 from docx.shared import Inches
 
 # Import the patient_info_page function
-from pages.patient_information import patient_info_page
+from patient_information import patient_info_page
 
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")

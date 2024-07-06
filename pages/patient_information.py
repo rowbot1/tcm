@@ -4,44 +4,22 @@ import datetime
 def patient_info_page():
     st.title("Patient Information")
 
-    # Add navigation buttons at the top
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Back to Home"):
-            st.session_state.page = "Home"
-            st.experimental_rerun()
-    with col2:
-        if st.button("View Report"):
-            st.session_state.page = "View Report"
-            st.experimental_rerun()
+    # Add navigation button at the top
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.experimental_rerun()
 
     # Initialize session state for patient info if not exists
     if 'patient_info' not in st.session_state:
         st.session_state.patient_info = {}
 
-    # Define the sections of your form
-    sections = ["Basic Information", "Presenting Complaint", "Medical History & Lifestyle", "10 Questions for Internal Diseases", "Tongue Diagnosis", "Pulse Diagnosis", "Additional Symptoms"]
-    
     # Function to calculate progress
     def calculate_progress():
-        total_fields = 0
-        filled_fields = 0
-        for key, value in st.session_state.patient_info.items():
-            if key not in ['tongue_shape', 'pulse_quality']:  # These are lists and should be handled differently
-                total_fields += 1
-                if value:
-                    filled_fields += 1
-            elif key in ['tongue_shape', 'pulse_quality'] and value:
-                total_fields += 1
-                filled_fields += 1
-        
-        # Add fields for 10 Questions
-        for i in range(10):
-            total_fields += 1
-            if st.session_state.patient_info.get(f'question_{i}_answer'):
-                filled_fields += 1
-        
-        return filled_fields / total_fields if total_fields > 0 else 0
+        required_fields = ['name', 'dob', 'gender', 'occupation', 'chief_complaint', 'complaint_background', 
+                           'medical_history', 'lifestyle', 'current_medications', 'tongue_color', 'tongue_coating', 
+                           'tongue_moisture', 'pulse_rate', 'additional_symptoms']
+        filled_fields = sum(1 for field in required_fields if st.session_state.patient_info.get(field))
+        return filled_fields / len(required_fields)
 
     # Display progress bar
     progress = calculate_progress()
@@ -80,38 +58,16 @@ def patient_info_page():
     gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
     occupation = st.text_input("Occupation", st.session_state.patient_info.get('occupation', ''))
 
-    # Auto-save function for Basic Information
-    st.session_state.patient_info.update({
-        'name': name,
-        'dob': dob_str,
-        'age': age,
-        'gender': gender,
-        'occupation': occupation,
-    })
-
     # Presenting Complaint
     st.subheader("Presenting Complaint")
     chief_complaint = st.text_area("Chief Complaint", st.session_state.patient_info.get('chief_complaint', ''), height=100)
     complaint_background = st.text_area("Background of Main Complaint (including aggravating and relieving factors)", st.session_state.patient_info.get('complaint_background', ''), height=150)
-
-    # Auto-save function for Presenting Complaint
-    st.session_state.patient_info.update({
-        'chief_complaint': chief_complaint,
-        'complaint_background': complaint_background,
-    })
 
     # Medical History & Lifestyle
     st.subheader("Medical History & Lifestyle")
     medical_history = st.text_area("Medical History", st.session_state.patient_info.get('medical_history', ''), height=150)
     lifestyle = st.text_area("Lifestyle Information", st.session_state.patient_info.get('lifestyle', ''), height=100)
     current_medications = st.text_area("Current Medications", st.session_state.patient_info.get('current_medications', ''), height=100)
-
-    # Auto-save function for Medical History & Lifestyle
-    st.session_state.patient_info.update({
-        'medical_history': medical_history,
-        'lifestyle': lifestyle,
-        'current_medications': current_medications,
-    })
 
     # 10 Questions for Internal Diseases
     st.subheader("10 Questions for Internal Diseases")
@@ -145,31 +101,35 @@ def patient_info_page():
     tongue_shape = st.multiselect("Tongue Shape", ["Normal", "Swollen", "Thin", "Cracked", "Tooth-marked"], default=st.session_state.patient_info.get('tongue_shape', []))
     tongue_moisture = st.selectbox("Tongue Moisture", ["Normal", "Dry", "Wet"], index=["Normal", "Dry", "Wet"].index(st.session_state.patient_info.get('tongue_moisture', 'Normal')))
 
-    # Auto-save function for Tongue Diagnosis
-    st.session_state.patient_info.update({
-        'tongue_color': tongue_color,
-        'tongue_coating': tongue_coating,
-        'tongue_shape': tongue_shape,
-        'tongue_moisture': tongue_moisture,
-    })
-
     # Pulse Diagnosis
     st.subheader("Pulse Diagnosis")
     pulse_rate = st.number_input("Pulse Rate (BPM)", min_value=40, max_value=200, value=st.session_state.patient_info.get('pulse_rate', 70))
     pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "String-like", "Slippery", "Rough", "Thin", "Weak", "Strong"], default=st.session_state.patient_info.get('pulse_quality', []))
 
-    # Auto-save function for Pulse Diagnosis
-    st.session_state.patient_info.update({
-        'pulse_rate': pulse_rate,
-        'pulse_quality': pulse_quality,
-    })
-
     # Additional Symptoms
     st.subheader("Additional Symptoms")
     additional_symptoms = st.text_area("Any other symptoms or concerns", st.session_state.patient_info.get('additional_symptoms', ''), height=150)
 
-    # Auto-save function for Additional Symptoms
-    st.session_state.patient_info['additional_symptoms'] = additional_symptoms
+    # Update session state with all input values
+    st.session_state.patient_info.update({
+        'name': name,
+        'dob': dob_str,
+        'age': age,
+        'gender': gender,
+        'occupation': occupation,
+        'chief_complaint': chief_complaint,
+        'complaint_background': complaint_background,
+        'medical_history': medical_history,
+        'lifestyle': lifestyle,
+        'current_medications': current_medications,
+        'tongue_color': tongue_color,
+        'tongue_coating': tongue_coating,
+        'tongue_shape': tongue_shape,
+        'tongue_moisture': tongue_moisture,
+        'pulse_rate': pulse_rate,
+        'pulse_quality': pulse_quality,
+        'additional_symptoms': additional_symptoms
+    })
 
     # Generate Report button
     if st.button("Generate Report"):
