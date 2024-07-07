@@ -1,5 +1,4 @@
 streamlit
-git+https://github.com/streamlit/gsheets-connection
 sentence-transformers
 pinecone-client
 groq
