@@ -137,25 +137,103 @@ def patient_info_page():
     st.subheader("Basic Information")
     st.session_state.patient_info['name'] = st.text_input("Patient Name", st.session_state.patient_info.get('name', ''))
     
-    # Date of Birth
-    dob = st.session_state.patient_info.get('dob', datetime.date.today())
-    dob = st.date_input("Date of Birth", value=dob)
-    st.session_state.patient_info['dob'] = dob.strftime("%d/%m/%y")
+    # Date of Birth with manual input
+    st.write("Date of Birth (DD/MM/YYYY)")
+    dob_col1, dob_col2, dob_col3 = st.columns(3)
+    with dob_col1:
+        dob_day = st.number_input("Day", min_value=1, max_value=31, value=st.session_state.patient_info.get('dob_day', 1))
+    with dob_col2:
+        dob_month = st.number_input("Month", min_value=1, max_value=12, value=st.session_state.patient_info.get('dob_month', 1))
+    with dob_col3:
+        dob_year = st.number_input("Year", min_value=1900, max_value=datetime.date.today().year, value=st.session_state.patient_info.get('dob_year', 1990))
+    st.session_state.patient_info['dob'] = f"{dob_day:02d}/{dob_month:02d}/{dob_year}"
     
     st.session_state.patient_info['gender'] = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
     st.session_state.patient_info['occupation'] = st.text_input("Occupation", st.session_state.patient_info.get('occupation', ''))
+    st.session_state.patient_info['marital_status'] = st.selectbox("Marital Status", ["Single", "Married", "Divorced", "Widowed", "Other"], index=["Single", "Married", "Divorced", "Widowed", "Other"].index(st.session_state.patient_info.get('marital_status', 'Single')))
+    st.session_state.patient_info['contact_number'] = st.text_input("Contact Number", st.session_state.patient_info.get('contact_number', ''))
+    st.session_state.patient_info['email'] = st.text_input("Email", st.session_state.patient_info.get('email', ''))
     
-    # ... (rest of the function remains the same)
-
+    # Presenting Complaint
+    st.subheader("Presenting Complaint")
+    st.session_state.patient_info['chief_complaint'] = st.text_area("Chief Complaint", st.session_state.patient_info.get('chief_complaint', ''))
+    st.session_state.patient_info['complaint_duration'] = st.text_input("Duration of Complaint", st.session_state.patient_info.get('complaint_duration', ''))
+    st.session_state.patient_info['complaint_frequency'] = st.text_input("Frequency of Complaint", st.session_state.patient_info.get('complaint_frequency', ''))
+    st.session_state.patient_info['complaint_severity'] = st.slider("Severity of Complaint", 0, 10, st.session_state.patient_info.get('complaint_severity', 5))
+    st.session_state.patient_info['complaint_background'] = st.text_area("Background of Main Complaint", st.session_state.patient_info.get('complaint_background', ''))
+    
+    # Medical History & Lifestyle
+    st.subheader("Medical History & Lifestyle")
+    st.session_state.patient_info['medical_history'] = st.text_area("Medical History (past illnesses, surgeries, etc.)", st.session_state.patient_info.get('medical_history', ''))
+    st.session_state.patient_info['family_medical_history'] = st.text_area("Family Medical History", st.session_state.patient_info.get('family_medical_history', ''))
+    st.session_state.patient_info['allergies'] = st.text_area("Allergies", st.session_state.patient_info.get('allergies', ''))
+    st.session_state.patient_info['current_medications'] = st.text_area("Current Medications (including dosages)", st.session_state.patient_info.get('current_medications', ''))
+    st.session_state.patient_info['lifestyle'] = st.text_area("Lifestyle Information (diet, exercise, sleep patterns, stress levels)", st.session_state.patient_info.get('lifestyle', ''))
+    st.session_state.patient_info['alcohol_consumption'] = st.text_input("Alcohol Consumption", st.session_state.patient_info.get('alcohol_consumption', ''))
+    st.session_state.patient_info['smoking_habits'] = st.text_input("Smoking Habits", st.session_state.patient_info.get('smoking_habits', ''))
+    
+    # Signs and Symptoms
+    st.subheader("Signs and Symptoms")
+    st.session_state.patient_info['signs_symptoms'] = st.text_area("Detailed Signs and Symptoms", st.session_state.patient_info.get('signs_symptoms', ''))
+    st.session_state.patient_info['aggravating_factors'] = st.text_area("Aggravating Factors", st.session_state.patient_info.get('aggravating_factors', ''))
+    st.session_state.patient_info['relieving_factors'] = st.text_area("Relieving Factors", st.session_state.patient_info.get('relieving_factors', ''))
+    
+    # 10 Questions for Internal Diseases
+    st.subheader("10 Questions for Internal Diseases")
+    questions = [
+        "Chills and/or Fever",
+        "Sweating and/or Hot Flushes",
+        "Headaches; type, frequency, location, dizziness",
+        "Any problems with Chest and/or Digestion",
+        "Food & Appetite",
+        "Stools & Urination",
+        "Sleep",
+        "Deafness/Tinnitus",
+        "Thirst & Drink",
+        "Pain; type, quality & location"
+    ]
+    for question in questions:
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            st.session_state.patient_info[f'{question.lower().replace(" ", "_")}_checkbox'] = st.checkbox(question, st.session_state.patient_info.get(f'{question.lower().replace(" ", "_")}_checkbox', False))
+        with col2:
+            st.session_state.patient_info[f'{question.lower().replace(" ", "_")}_details'] = st.text_area(f"{question} Details", st.session_state.patient_info.get(f'{question.lower().replace(" ", "_")}_details', ''))
+    
+    # Physical Examination
+    st.subheader("Physical Examination")
+    st.session_state.patient_info['tongue_diagnosis'] = st.text_area("Tongue Diagnosis (color, coating, moisture, shape, etc.)", st.session_state.patient_info.get('tongue_diagnosis', ''))
+    st.session_state.patient_info['pulse_diagnosis'] = st.text_area("Pulse Diagnosis (rate, rhythm, strength, quality on both wrists)", st.session_state.patient_info.get('pulse_diagnosis', ''))
+    st.session_state.patient_info['palpation_findings'] = st.text_area("Palpation Findings", st.session_state.patient_info.get('palpation_findings', ''))
+    st.session_state.patient_info['other_observations'] = st.text_area("Other Observations", st.session_state.patient_info.get('other_observations', ''))
+    
+    # Diagnosis and Treatment Plan
+    st.subheader("Diagnosis and Treatment Plan")
+    st.session_state.patient_info['tcm_diagnosis'] = st.text_area("TCM Diagnosis", st.session_state.patient_info.get('tcm_diagnosis', ''))
+    st.session_state.patient_info['western_diagnosis'] = st.text_area("Western Medicine Diagnosis (if applicable)", st.session_state.patient_info.get('western_diagnosis', ''))
+    st.session_state.patient_info['treatment_principles'] = st.text_area("Treatment Principles", st.session_state.patient_info.get('treatment_principles', ''))
+    st.session_state.patient_info['acupuncture_points'] = st.text_area("Acupuncture Points Used (point names, actions, and insertion details)", st.session_state.patient_info.get('acupuncture_points', ''))
+    st.session_state.patient_info['herbal_prescriptions'] = st.text_area("Herbal Prescriptions (herbs used, dosages, and preparation methods)", st.session_state.patient_info.get('herbal_prescriptions', ''))
+    st.session_state.patient_info['lifestyle_recommendations'] = st.text_area("Lifestyle Recommendations", st.session_state.patient_info.get('lifestyle_recommendations', ''))
+    st.session_state.patient_info['dietary_advice'] = st.text_area("Dietary Advice", st.session_state.patient_info.get('dietary_advice', ''))
+    
     # Treatment Sessions
     st.subheader("Treatment Sessions")
-    treatment_date = st.session_state.patient_info.get('treatment_date', datetime.date.today())
-    treatment_date = st.date_input("Treatment Date", value=treatment_date)
-    st.session_state.patient_info['treatment_date'] = treatment_date.strftime("%d/%m/%y")
+    st.write("Treatment Date (DD/MM/YYYY)")
+    td_col1, td_col2, td_col3 = st.columns(3)
+    with td_col1:
+        td_day = st.number_input("Day", min_value=1, max_value=31, value=st.session_state.patient_info.get('td_day', datetime.date.today().day), key="td_day")
+    with td_col2:
+        td_month = st.number_input("Month", min_value=1, max_value=12, value=st.session_state.patient_info.get('td_month', datetime.date.today().month), key="td_month")
+    with td_col3:
+        td_year = st.number_input("Year", min_value=2000, max_value=datetime.date.today().year, value=st.session_state.patient_info.get('td_year', datetime.date.today().year), key="td_year")
+    st.session_state.patient_info['treatment_date'] = f"{td_day:02d}/{td_month:02d}/{td_year}"
     
     st.session_state.patient_info['points_used_session'] = st.text_area("Points Used in Session", st.session_state.patient_info.get('points_used_session', ''))
+    st.session_state.patient_info['treatment_duration'] = st.number_input("Treatment Duration (minutes)", min_value=0, value=st.session_state.patient_info.get('treatment_duration', 30))
     st.session_state.patient_info['patient_feedback'] = st.text_area("Patient Feedback", st.session_state.patient_info.get('patient_feedback', ''))
+    st.session_state.patient_info['immediate_results'] = st.text_area("Immediate Results/Reactions", st.session_state.patient_info.get('immediate_results', ''))
     st.session_state.patient_info['therapist_notes'] = st.text_area("Therapist's Notes", st.session_state.patient_info.get('therapist_notes', ''))
+    st.session_state.patient_info['follow_up_recommendations'] = st.text_area("Follow-up Recommendations", st.session_state.patient_info.get('follow_up_recommendations', ''))
 
     # Generate Report button
     if st.button("Generate Report"):
