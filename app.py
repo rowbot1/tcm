@@ -378,7 +378,7 @@ def patient_info_page():
 
 def view_report_page():
     st.title("View TCM Diagnostic Report")
-    if st.session_state.generated_report:
+    if 'generated_report' in st.session_state and st.session_state.generated_report:
         # Display the report content
         doc = st.session_state.generated_report
         for paragraph in doc.paragraphs:
