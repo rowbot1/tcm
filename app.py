@@ -59,15 +59,10 @@ def init_resources():
 
 index, embedding_model, groq_client = init_resources()
 
-# Initialize session state
-if 'patient_info' not in st.session_state:
-    st.session_state.patient_info = {}
-if 'generated_report' not in st.session_state:
-    st.session_state.generated_report = None
-
 def clear_patient_data():
     st.session_state.patient_info = {}
     st.session_state.generated_report = None
+    st.session_state.search_success = None
     st.success("Patient data has been cleared.")
 
 def calculate_age(born):
@@ -155,13 +150,9 @@ def search_patient(name):
     try:
         cell = sheet.find(name)
         row = sheet.row_values(cell.row)
-        headers = sheet.row_values(1)  # Assuming the first row contains headers
+        headers = sheet.row_values(1)
         patient_data = dict(zip(headers, row))
-        
-        # Convert empty strings to None for consistency
-        patient_data = {k: (v if v != '' else None) for k, v in patient_data.items()}
-        
-        return patient_data
+        return {k: (v if v != '' else None) for k, v in patient_data.items()}
     except:
         return None
 
@@ -169,50 +160,62 @@ def save_patient(patient_info):
     if sheet is None:
         st.error("Google Sheets connection is not available. Cannot save patient information.")
         return
-    headers = sheet.row_values(1)
-    row_data = [patient_info.get(header, '') for header in headers]
-    sheet.append_row(row_data)
+    try:
+        # Check if patient already exists
+        existing_patient = search_patient(patient_info['name'])
+        
+        headers = sheet.row_values(1)
+        row_data = [patient_info.get(header, '') for header in headers]
+        
+        if existing_patient:
+            # Update existing patient
+            cell = sheet.find(patient_info['name'])
+            for col, value in enumerate(row_data, start=1):
+                sheet.update_cell(cell.row, col, value)
+            st.success(f"Updated information for patient: {patient_info['name']}")
+        else:
+            # Add new patient
+            sheet.append_row(row_data)
+            st.success(f"Added new patient: {patient_info['name']}")
+    except Exception as e:
+        st.error(f"An error occurred while saving patient information: {str(e)}")
 
-def update_patient(patient_info, row):
-    if sheet is None:
-        st.error("Google Sheets connection is not available. Cannot update patient information.")
-        return
-    headers = sheet.row_values(1)
-    for col, header in enumerate(headers, start=1):
-        sheet.update_cell(row, col, patient_info.get(header, ''))
+def search_callback():
+    search_name = st.session_state.search_input
+    if search_name:
+        patient_data = search_patient(search_name)
+        if patient_data is not None:
+            st.session_state.patient_info = patient_data
+            st.session_state.search_success = True
+        else:
+            st.session_state.patient_info = {}
+            st.session_state.search_success = False
+    else:
+        st.session_state.search_success = None
 
 def patient_info_page():
     st.title("Patient Information for TCM Diagnosis")
     
-    # Initialize searched_patient_data in session state if it doesn't exist
-    if 'searched_patient_data' not in st.session_state:
-        st.session_state.searched_patient_data = None
+    # Initialize session state variables
+    if 'patient_info' not in st.session_state:
+        st.session_state.patient_info = {}
+    if 'search_success' not in st.session_state:
+        st.session_state.search_success = None
     
-    # Search for existing patient
-    search_name = st.text_input("Search Patient Name")
-    if st.button("Search"):
-        if search_name:
-            patient_data = search_patient(search_name)
-            if patient_data is not None:
-                st.session_state.searched_patient_data = patient_data
-                st.success(f"Patient '{search_name}' found. Form fields will be populated.")
-                st.experimental_rerun()  # Force a re-render of the page
-            else:
-                st.warning(f"Patient '{search_name}' not found. Please enter new patient information.")
-                st.session_state.searched_patient_data = None
-        else:
-            st.warning("Please enter a patient name to search.")
+    # Search form
+    st.text_input("Search Patient Name", key="search_input", on_change=search_callback)
     
-    # Use searched_patient_data to populate form fields if available
-    patient_data = st.session_state.searched_patient_data or {}
+    if st.session_state.search_success is True:
+        st.success(f"Patient '{st.session_state.search_input}' found. Form fields have been populated.")
+    elif st.session_state.search_success is False:
+        st.warning(f"Patient '{st.session_state.search_input}' not found. Please enter new patient information.")
     
-    # Basic Information
+    # Form fields
     st.subheader("Basic Information")
-    name = st.text_input("Patient Name", value=patient_data.get('name', ''))
+    name = st.text_input("Patient Name", key="name", value=st.session_state.patient_info.get('name', ''))
     
-    # Date of Birth with age calculation
-    st.write("Date of Birth (DD/MM/YYYY)")
-    dob = patient_data.get('dob', '')
+    # Date of Birth
+    dob = st.session_state.patient_info.get('dob', '')
     dob_day, dob_month, dob_year = 1, 1, 1990
     if dob:
         try:
@@ -222,62 +225,62 @@ def patient_info_page():
     
     dob_col1, dob_col2, dob_col3 = st.columns(3)
     with dob_col1:
-        dob_day = st.number_input("Day", min_value=1, max_value=31, value=dob_day)
+        dob_day = st.number_input("Day", key="dob_day", min_value=1, max_value=31, value=dob_day)
     with dob_col2:
-        dob_month = st.number_input("Month", min_value=1, max_value=12, value=dob_month)
+        dob_month = st.number_input("Month", key="dob_month", min_value=1, max_value=12, value=dob_month)
     with dob_col3:
-        dob_year = st.number_input("Year", min_value=1900, max_value=datetime.date.today().year, value=dob_year)
+        dob_year = st.number_input("Year", key="dob_year", min_value=1900, max_value=datetime.date.today().year, value=dob_year)
     
     dob = datetime.date(dob_year, dob_month, dob_day)
     dob_str = dob.strftime("%d/%m/%Y")
     age = calculate_age(dob)
     st.write(f"Patient Age: {age} years")
     
-    gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(patient_data.get('gender', 'Male')))
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
     
     # Chief Complaint
     st.subheader("Chief Complaint")
-    chief_complaint = st.text_area("Main Complaint", value=patient_data.get('chief_complaint', ''))
-    complaint_duration = st.text_input("Duration of Complaint", value=patient_data.get('complaint_duration', ''))
+    chief_complaint = st.text_area("Main Complaint", key="chief_complaint", value=st.session_state.patient_info.get('chief_complaint', ''))
+    complaint_duration = st.text_input("Duration of Complaint", key="complaint_duration", value=st.session_state.patient_info.get('complaint_duration', ''))
     
     # TCM Four Diagnostic Methods
     st.subheader("TCM Four Diagnostic Methods")
     
     # 1. Inspection (望 wàng)
     st.write("1. Inspection (望 wàng)")
-    complexion = st.text_input("Complexion", value=patient_data.get('complexion', ''))
-    tongue_color = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(patient_data.get('tongue_color', 'Pale')))
-    tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('tongue_coating', 'Thin White')))
-    tongue_shape = st.text_input("Tongue Shape and Features", value=patient_data.get('tongue_shape', ''))
+    complexion = st.text_input("Complexion", key="complexion", value=st.session_state.patient_info.get('complexion', ''))
+    tongue_color = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], key="tongue_color", index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(st.session_state.patient_info.get('tongue_color', 'Pale')))
+    tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], key="tongue_coating", index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(st.session_state.patient_info.get('tongue_coating', 'Thin White')))
+    tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=st.session_state.patient_info.get('tongue_shape', ''))
     
     # 2. Auscultation and Olfaction (聞 wén)
     st.write("2. Auscultation and Olfaction (聞 wén)")
-    voice_sound = st.text_input("Voice Sound", value=patient_data.get('voice_sound', ''))
-    breath_odor = st.text_input("Breath Odor", value=patient_data.get('breath_odor', ''))
+    voice_sound = st.text_input("Voice Sound", key="voice_sound", value=st.session_state.patient_info.get('voice_sound', ''))
+    breath_odor = st.text_input("Breath Odor", key="breath_odor", value=st.session_state.patient_info.get('breath_odor', ''))
     
     # 3. Inquiry (問 wèn)
     st.write("3. Inquiry (問 wèn)")
-    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(patient_data.get('cold_heat_sensation', 'Normal')))
-    sweating = st.text_input("Sweating", value=patient_data.get('sweating', ''))
-    appetite = st.text_input("Appetite and Thirst", value=patient_data.get('appetite', ''))
-    sleep = st.text_input("Sleep Pattern", value=patient_data.get('sleep', ''))
-    bowel_movements = st.text_input("Bowel Movements", value=patient_data.get('bowel_movements', ''))
-    urination = st.text_input("Urination", value=patient_data.get('urination', ''))
-    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", value=patient_data.get('pain', ''))
+    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(st.session_state.patient_info.get('cold_heat_sensation', 'Normal')))
+    sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
+    appetite = st.text_input("Appetite and Thirst", key="appetite", value=st.session_state.patient_info.get('appetite', ''))
+    sleep = st.text_input("Sleep Pattern", key="sleep", value=st.session_state.patient_info.get('sleep', ''))
+    bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=st.session_state.patient_info.get('bowel_movements', ''))
+    urination = st.text_input("Urination", key="urination", value=st.session_state.patient_info.get('urination', ''))
+    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=st.session_state.patient_info.get('pain', ''))
     
     # 4. Palpation (切 qiè)
     st.write("4. Palpation (切 qiè)")
-    pulse_rate = st.number_input("Pulse Rate (BPM)", min_value=40, max_value=200, value=int(patient_data.get('pulse_rate', 70)))
-    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], default=patient_data.get('pulse_quality', []))
+    pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(st.session_state.patient_info.get('pulse_rate', 70)))
+    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], key="pulse_quality", default=st.session_state.patient_info.get('pulse_quality', []))
     
     # Additional TCM Diagnostic Information
     st.subheader("Additional TCM Diagnostic Information")
-    emotions = st.text_area("Emotional State", value=patient_data.get('emotions', ''))
-    lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", value=patient_data.get('lifestyle', ''))
-    medical_history = st.text_area("Relevant Medical History", value=patient_data.get('medical_history', ''))
-    
-    # Update session state with form data
-    st.session_state.patient_info = {
+    emotions = st.text_area("Emotional State", key="emotions", value=st.session_state.patient_info.get('emotions', ''))
+    lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=st.session_state.patient_info.get('lifestyle', ''))
+    medical_history = st.text_area("Relevant Medical History", key="medical_history", value=st.session_state.patient_info.get('medical_history', ''))
+
+    # Update session state
+    st.session_state.patient_info.update({
         'name': name,
         'dob': dob_str,
         'gender': gender,
@@ -301,8 +304,8 @@ def patient_info_page():
         'emotions': emotions,
         'lifestyle': lifestyle,
         'medical_history': medical_history
-    }
-    
+    })
+
     # Save patient information
     if st.button("Save Patient Information"):
         if name:
@@ -353,8 +356,8 @@ def patient_info_page():
 
     # Clear form button
     if st.button("Clear Form"):
-        st.session_state.searched_patient_data = None
         st.session_state.patient_info = {}
+        st.session_state.search_success = None
         st.experimental_rerun()
 
 def view_report_page():
