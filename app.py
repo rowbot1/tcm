@@ -38,7 +38,8 @@ try:
     creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
     gc = gspread.authorize(creds)
     
-    sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
+    sheet_id = st.secrets["google_sheets"]["sheet_id"]
+    sheet = gc.open_by_key(sheet_id).sheet1
     st.success("Successfully connected to Google Sheets")
 except Exception as e:
     st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
