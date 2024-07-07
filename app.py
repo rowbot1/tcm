@@ -166,7 +166,7 @@ def save_patient(patient_info):
         st.error("Google Sheets connection is not available. Cannot save patient information.")
         return
     try:
-        # Update the sheet with the patient information
+        print("Patient information:", patient_info)
         headers = sheet.row_values(1)
         row_data = []
         for header in headers:
@@ -174,8 +174,10 @@ def save_patient(patient_info):
         row_num = len(sheet.get_all_values()) + 1
         for col, value in enumerate(row_data):
             sheet.update_cell(row_num, col + 1, value)
+        print("Patient information saved successfully")
         st.success("Patient information saved successfully")
     except Exception as e:
+        print(f"An error occurred while saving patient information: {str(e)}")
         st.error(f"An error occurred while saving patient information: {str(e)}")
 
 def patient_info_page():
