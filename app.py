@@ -7,12 +7,11 @@ import pinecone
 import groq
 from docx import Document
 from io import BytesIO
-import gspread
-from google.oauth2.service_account import Credentials
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
 # Set up Streamlit
-st.set_page_config(page_title="AccuAssist", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
 
 # Custom CSS to hide the sidebar
 hide_sidebar_style = """
@@ -27,23 +26,8 @@ PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 INDEX_NAME = "tcmapp"
 
-# Set up Google Sheets credentials
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-
-try:
-    service_account_info = st.secrets["gcp_service_account"]
-    if isinstance(service_account_info, str):
-        service_account_info = json.loads(service_account_info)
-    
-    creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
-    gc = gspread.authorize(creds)
-    
-    sheet_id = st.secrets["google_sheets"]["sheet_id"]
-    sheet = gc.open_by_key(sheet_id).sheet1
-    st.success("Successfully connected to Google Sheets")
-except Exception as e:
-    st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
-    sheet = None
+# Set up Google Sheets connection
+conn = st.experimental_connection("gsheets", type=GSheetsConnection)
 
 # Initialize resources
 @st.cache_resource
@@ -144,18 +128,12 @@ def generate_diagnostic_report(context, user_input):
         time.sleep(1)  # Add a small delay to avoid rate limiting
     
     return document
-
 def search_patient(name):
-    if sheet is None:
-        st.error("Google Sheets connection is not available. Patient search is disabled.")
-        return None
     try:
-        cell = sheet.find(name)
-        if cell:
-            row = sheet.row_values(cell.row)
-            headers = sheet.row_values(1)
-            patient_data = dict(zip(headers, row))
-            return {k: (v if v != '' else None) for k, v in patient_data.items()}
+        df = conn.read(worksheet="your-worksheet-name")
+        patient_data = df[df['name'] == name]
+        if not patient_data.empty:
+            return patient_data.iloc[0].to_dict()
         else:
             return None
     except Exception as e:
@@ -163,13 +141,10 @@ def search_patient(name):
         return None
 
 def save_patient(patient_info):
-    if sheet is None:
-        st.error("Google Sheets connection is not available. Cannot save patient information.")
-        return
     try:
-        # Ensure headers are correct and get them
-        headers = sheet.row_values(1)
-        
+        df = conn.read(worksheet="your-worksheet-name")
+        headers = df.columns.tolist()
+
         # Prepare row data to match the headers
         row_data = []
         for header in headers:
@@ -179,12 +154,17 @@ def save_patient(patient_info):
         # Check if patient already exists
         existing_patient = search_patient(patient_info['name'])
         if existing_patient:
-            cell = sheet.find(patient_info['name'])
-            for col, value in enumerate(row_data, start=1):
-                sheet.update_cell(cell.row, col, value)
+            # Update the existing patient's information
+            index = df.index[df['name'] == patient_info['name']].tolist()[0]
+            for col, value in enumerate(row_data):
+                df.at[index, headers[col]] = value
+            conn.write(df, worksheet="your-worksheet-name")
             st.success(f"Updated information for patient: {patient_info['name']}")
         else:
-            sheet.append_row(row_data)
+            # Add a new patient's information
+            new_row = pd.Series(row_data, index=headers)
+            df = df.append(new_row, ignore_index=True)
+            conn.write(df, worksheet="your-worksheet-name")
             st.success(f"Added new patient: {patient_info['name']}")
     except Exception as e:
         st.error(f"An error occurred while saving patient information: {str(e)}")
@@ -399,8 +379,8 @@ def view_report_page():
         st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
 
 def main():
-    st.title("Welcome to AccuAssist")
-    st.write("This application helps generate comprehensive Traditional Chinese Medicine diagnostic reports based on patient information and symptoms.")
+    st.title("Welcome to AcuAssist")
+    st.write("This application helps generate comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on patient information and symptoms.")
 
     # Navigation
     st.write("## Navigation")
@@ -418,3 +398,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
