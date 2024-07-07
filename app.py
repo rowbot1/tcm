@@ -8,8 +8,8 @@ import groq
 from docx import Document
 from io import BytesIO
 
-# Hide the sidebar
-st.set_page_config(initial_sidebar_state="collapsed")
+# Set up Streamlit
+st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
 
 # Custom CSS to hide the sidebar
 hide_sidebar_style = """
@@ -18,8 +18,6 @@ hide_sidebar_style = """
     </style>
 """
 st.markdown(hide_sidebar_style, unsafe_allow_html=True)
-# Set up Streamlit
-st.set_page_config(page_title="AcuAssist", layout="wide")
 
 # Load API keys from Streamlit secrets
 PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
