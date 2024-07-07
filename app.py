@@ -17,11 +17,15 @@ INDEX_NAME = "tcmapp"
 # Initialize resources
 @st.cache_resource
 def init_resources():
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    index = pc.Index(INDEX_NAME)
-    embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-    groq_client = groq.Client(api_key=GROQ_API_KEY)
-    return index, embedding_model, groq_client
+    try:
+        pc = Pinecone(api_key=PINECONE_API_KEY)
+        index = pc.Index(INDEX_NAME)
+        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        groq_client = groq.Client(api_key=GROQ_API_KEY)
+        return index, embedding_model, groq_client
+    except Exception as e:
+        st.error(f"Error initializing resources: {str(e)}")
+        return None, None, None
 
 index, embedding_model, groq_client = init_resources()
 
@@ -44,6 +48,8 @@ def calculate_progress():
 
 @st.cache_data
 def query_pinecone(query_text, top_k=5):
+    if index is None:
+        raise ValueError("Pinecone index is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
     results = index.query(vector=query_vector, top_k=top_k, include_metadata=True)
     return results
@@ -141,13 +147,16 @@ def patient_info_page():
                 user_input = json.dumps(serializable_patient_info, indent=2)
                 
                 # Query Pinecone for relevant context
-                try:
-                    query_results = query_pinecone(user_input)
-                    context = "\n".join([match['metadata']['text'] for match in query_results['matches'] if 'text' in match['metadata']])
-                except Exception as e:
-                    st.error(f"Error querying Pinecone: {str(e)}")
-                    st.error("Proceeding with report generation without Pinecone context.")
-                    context = ""
+                context = ""
+                if index is not None and embedding_model is not None:
+                    try:
+                        query_results = query_pinecone(user_input)
+                        context = "\n".join([match['metadata']['text'] for match in query_results['matches'] if 'text' in match['metadata']])
+                    except Exception as e:
+                        st.error(f"Error querying Pinecone: {str(e)}")
+                        st.warning("Proceeding with report generation without Pinecone context.")
+                else:
+                    st.warning("Pinecone or embedding model not initialized. Proceeding without context.")
                 
                 start_time = time.time()
                 report = generate_diagnostic_report(context, user_input)
