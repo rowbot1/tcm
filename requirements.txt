@@ -7,3 +7,4 @@ pinecone-client
 groq
 pandas
 google-auth
+oauth2client
