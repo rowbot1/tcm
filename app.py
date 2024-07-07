@@ -5,6 +5,8 @@ import time
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 import groq
+from docx import Document
+from io import BytesIO
 
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")
@@ -86,34 +88,37 @@ You are generating a report for {patient_name}, a {patient_age}-year-old patient
         "3. Pattern Differentiation",
         "4. Treatment Principle and Plan",
         "5. Acupuncture Point Prescription",
-        "6. Herbal Formula Recommendation (if applicable)",
+        "6. Herbal Formula Recommendation",
         "7. Lifestyle and Dietary Advice",
         "8. Prognosis and Follow-up Recommendations"
     ]
     
-    full_report = f"TCM Diagnostic Report for {patient_name}\n\n"
+    document = Document()
+    document.add_heading(f"TCM Diagnostic Report for {patient_name}", 0)
+    
     progress_bar = st.progress(0)
     
     for i, section in enumerate(report_sections):
         user_message = f"""
         Based on the following patient information and context, generate a comprehensive and detailed TCM diagnostic report section for: {section}
-        Ensure your response is extremely thorough and professional, demonstrating deep understanding of TCM principles and providing well-reasoned insights.
+        Ensure your response is extremely thorough and professional, demonstrating deep understanding of TCM principles and providing well-reasoned insights. Do not repeat the section title in your response.
         Context: {context}
         Patient Information: {user_input}
-        Generate the {section} of the TCM Diagnostic Report:
+        Generate the content for {section} of the TCM Diagnostic Report:
         """
         
         with st.spinner(f"Generating {section}..."):
             section_content = generate_diagnostic_report_part(system_message, user_message)
             if section_content:
-                full_report += f"\n\n{section}\n{section_content}"
+                document.add_heading(section, level=1)
+                document.add_paragraph(section_content)
             else:
                 st.warning(f"Failed to generate {section}. Moving to the next section.")
         
         progress_bar.progress((i + 1) / len(report_sections))
         time.sleep(1)  # Add a small delay to avoid rate limiting
     
-    return full_report
+    return document
 
 def patient_info_page():
     st.title("Patient Information for TCM Diagnosis")
@@ -223,13 +228,21 @@ def patient_info_page():
 def view_report_page():
     st.title("View TCM Diagnostic Report")
     if st.session_state.generated_report:
-        st.write(st.session_state.generated_report)
+        # Display the report content
+        doc = st.session_state.generated_report
+        for paragraph in doc.paragraphs:
+            st.write(paragraph.text)
+        
         # Add a download button for the report
+        buffer = BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        
         st.download_button(
-            label="Download Report",
-            data=st.session_state.generated_report,
-            file_name="tcm_diagnostic_report.txt",
-            mime="text/plain"
+            label="Download Report as Word Document",
+            data=buffer,
+            file_name="tcm_diagnostic_report.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     else:
         st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
