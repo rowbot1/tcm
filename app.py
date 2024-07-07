@@ -8,6 +8,16 @@ import groq
 from docx import Document
 from io import BytesIO
 
+# Hide the sidebar
+st.set_page_config(initial_sidebar_state="collapsed")
+
+# Custom CSS to hide the sidebar
+hide_sidebar_style = """
+    <style>
+        div[data-testid="stSidebar"] {display: none;}
+    </style>
+"""
+st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide")
 
