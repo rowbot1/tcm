@@ -176,8 +176,6 @@ def update_patient(patient_info, row):
     for col, header in enumerate(headers, start=1):
         sheet.update_cell(row, col, patient_info.get(header, ''))
 
-Fixed patient_info_page function with proper try-except block
-
 def patient_info_page():
     st.title("Patient Information for TCM Diagnosis")
     
