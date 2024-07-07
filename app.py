@@ -49,8 +49,14 @@ except Exception as e:
 @st.cache_resource
 def init_resources():
     try:
-        pinecone.init(api_key=PINECONE_API_KEY, environment='us-west1-gcp')
-        index = pinecone.Index(INDEX_NAME)
+        pc = pinecone.Pinecone(api_key=PINECONE_API_KEY)
+        if INDEX_NAME not in pc.list_indexes().names():
+            pc.create_index(
+                name=INDEX_NAME,
+                dimension=384,  # Adjust the dimension according to your model
+                metric='cosine'  # Adjust the metric as needed
+            )
+        index = pc.Index(INDEX_NAME)
         embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         groq_client = groq.Client(api_key=GROQ_API_KEY)
         return index, embedding_model, groq_client
