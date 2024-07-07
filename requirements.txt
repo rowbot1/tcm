@@ -8,4 +8,4 @@ groq
 pandas
 google-auth
 oauth2client
-streamlit-gsheets
+st-gsheets-connection
