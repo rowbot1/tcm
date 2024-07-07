@@ -244,13 +244,7 @@ def patient_info_page():
         else:
             st.error("Please enter patient name before saving")
     
-    # Generate Report button
-    if st.button("Generate TCM Diagnostic Report"):
-        if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
-            try:
-                # Create a copy of the patient info
-                serializable_patient_info = st.session_state.patient# Generate Report button
-    if st.button("Generate TCM Diagnostic Report"):
+    # if st.button("Generate TCM Diagnostic Report"):
         if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
             try:
                 # Create a copy of the patient info
