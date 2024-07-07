@@ -171,7 +171,7 @@ def save_patient(patient_info):
         row_data = []
         for header in headers:
             row_data.append(patient_info.get(header, ""))
-        row_num = len(sheet.get_all_records(headers=headers)) + 1
+        row_num = len(sheet.get_all_values()) + 1
         for col, value in enumerate(row_data):
             sheet.update_cell(row_num, col + 1, value)
         st.success("Patient information saved successfully")
