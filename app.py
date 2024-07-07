@@ -32,8 +32,8 @@ scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/au
 creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
 gc = gspread.authorize(creds)
 
-# Open the Google Sheet (replace with your sheet ID)
-sheet = gc.open_by_key("your_sheet_id_here").sheet1
+# Open the Google Sheet
+sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
 
 # Initialize resources
 @st.cache_resource
@@ -244,7 +244,8 @@ def patient_info_page():
         else:
             st.error("Please enter patient name before saving")
     
-    # if st.button("Generate TCM Diagnostic Report"):
+    # Generate Report button
+    if st.button("Generate TCM Diagnostic Report"):
         if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
             try:
                 # Create a copy of the patient info
