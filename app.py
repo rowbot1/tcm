@@ -8,8 +8,19 @@ import groq
 from docx import Document
 from io import BytesIO
 import gspread
-import pandas as pd
 from google.oauth2.service_account import Credentials
+import pandas as pd
+
+# Set up Streamlit
+st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
+
+# Custom CSS to hide the sidebar
+hide_sidebar_style = """
+    <style>
+        div[data-testid="stSidebar"] {display: none;}
+    </style>
+"""
+st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 
 # Load API keys from Streamlit secrets
 PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
@@ -20,29 +31,17 @@ INDEX_NAME = "tcmapp"
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
 try:
-    # Attempt to load and parse the service account info
     service_account_info = st.secrets["gcp_service_account"]
     if isinstance(service_account_info, str):
-        # If it's a string, try to parse it as JSON
         service_account_info = json.loads(service_account_info)
-
+    
     creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
-
-    # Try to authorize and open the sheet
-    try:
-        gc = gspread.authorize(creds)
-        sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1  # Get the sheet ID directly from secrets
-        st.success("Successfully connected to Google Sheets")
-    except gspread.exceptions.GSpreadException as e:
-        st.error(f"Google Sheets authorization error: {e}")
-        sheet = None
-except json.JSONDecodeError:
-    st.error("Error: The service account info is not valid JSON. Please check your secrets configuration.")
-except KeyError as e:
-    st.error(f"Error: Missing key in secrets - {str(e)}. Please check your secrets configuration.")
-except Exception as e:  # Catch any other unexpected exceptions
+    gc = gspread.authorize(creds)
+    
+    sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
+    st.success("Successfully connected to Google Sheets")
+except Exception as e:
     st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
-    st.error("Please check your service account credentials and make sure they are correctly formatted.")
     sheet = None
 
 # Initialize resources
@@ -156,41 +155,43 @@ def search_patient(name):
     try:
         cell = sheet.find(name)
         row = sheet.row_values(cell.row)
-        return pd.Series(row, index=sheet.row_values(1))
+        headers = sheet.row_values(1)  # Assuming the first row contains headers
+        return dict(zip(headers, row))
     except:
         return None
 
 def save_patient(patient_info):
     if sheet is None:
-        st.error("Google Sheets connection is not available. Patient saving is disabled.")
+        st.error("Google Sheets connection is not available. Cannot save patient information.")
         return
-    
-    # Convert dictionary values to a list and append
-    row_values = list(patient_info.values())
-    try:
-        sheet.append_row(row_values)  # Append directly to the existing sheet
-        st.success("New patient information saved")
-    except gspread.exceptions.APIError as e:
-        st.error(f"Error saving patient information: {e}")
+    headers = sheet.row_values(1)
+    row_data = [patient_info.get(header, '') for header in headers]
+    sheet.append_row(row_data)
 
 def update_patient(patient_info, row):
-    for col, value in enumerate(patient_info.values(), start=1):
-        sheet.update_cell(row, col, value)
+    if sheet is None:
+        st.error("Google Sheets connection is not available. Cannot update patient information.")
+        return
+    headers = sheet.row_values(1)
+    for col, header in enumerate(headers, start=1):
+        sheet.update_cell(row, col, patient_info.get(header, ''))
 
 def patient_info_page():
     st.title("Patient Information for TCM Diagnosis")
     
     # Search for existing patient
     search_name = st.text_input("Search Patient Name")
-    if search_name:
-        patient_data = search_patient(search_name)
-        if patient_data is not None:
-            st.write("Patient found:")
-            st.write(patient_data)
-            if st.button("Load Patient Data"):
-                st.session_state.patient_info = patient_data.to_dict()
+    if st.button("Search"):
+        if search_name:
+            patient_data = search_patient(search_name)
+            if patient_data is not None:
+                st.success(f"Patient '{search_name}' found. Form fields have been populated.")
+                st.session_state.patient_info = patient_data
+            else:
+                st.warning(f"Patient '{search_name}' not found. Please enter new patient information.")
+                st.session_state.patient_info = {}
         else:
-            st.write("Patient not found")
+            st.warning("Please enter a patient name to search.")
     
     # Basic Information
     st.subheader("Basic Information")
@@ -198,13 +199,21 @@ def patient_info_page():
     
     # Date of Birth with age calculation
     st.write("Date of Birth (DD/MM/YYYY)")
+    dob = st.session_state.patient_info.get('dob', '')
+    dob_day, dob_month, dob_year = 1, 1, 1990
+    if dob:
+        try:
+            dob_day, dob_month, dob_year = map(int, dob.split('/'))
+        except:
+            st.error("Invalid date format in stored data. Using default values.")
+    
     dob_col1, dob_col2, dob_col3 = st.columns(3)
     with dob_col1:
-        dob_day = st.number_input("Day", min_value=1, max_value=31, value=st.session_state.patient_info.get('dob_day', 1))
+        dob_day = st.number_input("Day", min_value=1, max_value=31, value=dob_day)
     with dob_col2:
-        dob_month = st.number_input("Month", min_value=1, max_value=12, value=st.session_state.patient_info.get('dob_month', 1))
+        dob_month = st.number_input("Month", min_value=1, max_value=12, value=dob_month)
     with dob_col3:
-        dob_year = st.number_input("Year", min_value=1900, max_value=datetime.date.today().year, value=st.session_state.patient_info.get('dob_year', 1990))
+        dob_year = st.number_input("Year", min_value=1900, max_value=datetime.date.today().year, value=dob_year)
     
     dob = datetime.date(dob_year, dob_month, dob_day)
     st.session_state.patient_info['dob'] = dob.strftime("%d/%m/%Y")
@@ -245,7 +254,7 @@ def patient_info_page():
     
     # 4. Palpation (切 qiè)
     st.write("4. Palpation (切 qiè)")
-    st.session_state.patient_info['pulse_rate'] = st.number_input("Pulse Rate (BPM)", min_value=40, max_value=200, value=st.session_state.patient_info.get('pulse_rate', 70))
+    st.session_state.patient_info['pulse_rate'] = st.number_input("Pulse Rate (BPM)", min_value=40, max_value=200, value=int(st.session_state.patient_info.get('pulse_rate', 70)))
     st.session_state.patient_info['pulse_quality'] = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], default=st.session_state.patient_info.get('pulse_quality', []))
     
     # Additional TCM Diagnostic Information
@@ -256,10 +265,11 @@ def patient_info_page():
     
     # Save patient information
     if st.button("Save Patient Information"):
-        if 'name' in st.session_state.patient_info:
+        if 'name' in st.session_state.patient_info and st.session_state.patient_info['name']:
             existing_patient = search_patient(st.session_state.patient_info['name'])
             if existing_patient is not None:
-                update_patient(st.session_state.patient_info, existing_patient.name)
+                cell = sheet.find(st.session_state.patient_info['name'])
+                update_patient(st.session_state.patient_info, cell.row)
                 st.success("Patient information updated")
             else:
                 save_patient(st.session_state.patient_info)
