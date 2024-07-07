@@ -11,8 +11,8 @@ def patient_info_page():
     # Function to calculate progress
     def calculate_progress():
         required_fields = ['name', 'dob', 'gender', 'occupation', 'chief_complaint', 'complaint_background', 
-                            'medical_history', 'lifestyle', 'current_medications', 'tongue_color', 'tongue_coating', 
-                            'tongue_moisture', 'pulse_rate', 'additional_symptoms']
+                           'medical_history', 'lifestyle', 'current_medications', 'tongue_color', 'tongue_coating', 
+                           'tongue_moisture', 'pulse_rate', 'additional_symptoms']
         question_fields = [f'question_{i}_answer' for i in range(10)]
         all_fields = required_fields + question_fields
         
@@ -24,40 +24,38 @@ def patient_info_page():
     st.progress(progress)
     st.write(f"Progress: {progress:.0%}")
 
-    # --- Patient Information Form ---
-    
-    with st.form("patient_form"):
-        st.subheader("Basic Information")
-        st.text_input("Name", key='name', value=st.session_state.patient_info.get('name', ''))
-        st.date_input("Date of Birth (DOB)", key='dob', value=st.session_state.patient_info.get('dob', datetime.date.today()))
-        st.selectbox("Gender", options=["Male", "Female", "Other"], key='gender', index=0)
-        st.text_input("Occupation", key='occupation', value=st.session_state.patient_info.get('occupation', ''))
+    # Basic Information
+    st.subheader("Basic Information")
+    name = st.text_input("Patient Name", st.session_state.patient_info.get('name', ''))
+    dob = st.date_input("Date of Birth", value=st.session_state.patient_info.get('dob'))
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
+    occupation = st.text_input("Occupation", st.session_state.patient_info.get('occupation', ''))
 
-        st.subheader("Primary Complaint")
-        st.text_area("Chief Complaint", key='chief_complaint', value=st.session_state.patient_info.get('chief_complaint', ''))
-        st.text_area("Complaint Background (How long has this been a problem? etc.)", key='complaint_background', value=st.session_state.patient_info.get('complaint_background', ''))
+    # Presenting Complaint
+    st.subheader("Presenting Complaint")
+    chief_complaint = st.text_area("Chief Complaint", st.session_state.patient_info.get('chief_complaint', ''))
+    complaint_background = st.text_area("Background of Main Complaint", st.session_state.patient_info.get('complaint_background', ''))
 
-        st.subheader("Medical History")
-        st.text_area("Medical History (Any relevant illnesses, surgeries, medications, etc.)", key='medical_history', value=st.session_state.patient_info.get('medical_history', ''))
-        st.text_area("Lifestyle (Diet, exercise, sleep, stress levels)", key='lifestyle', value=st.session_state.patient_info.get('lifestyle', ''))
-        st.text_area("Current Medications", key='current_medications', value=st.session_state.patient_info.get('current_medications', ''))
+    # Medical History & Lifestyle
+    st.subheader("Medical History & Lifestyle")
+    medical_history = st.text_area("Medical History", st.session_state.patient_info.get('medical_history', ''))
+    lifestyle = st.text_area("Lifestyle Information", st.session_state.patient_info.get('lifestyle', ''))
+    current_medications = st.text_area("Current Medications", st.session_state.patient_info.get('current_medications', ''))
 
-        st.subheader("Tongue & Pulse Diagnosis")
-        st.selectbox("Tongue Color", options=["Red", "Pale", "Purple", "Other"], key='tongue_color', index=0)
-        st.selectbox("Tongue Coating", options=["Thick", "Thin", "White", "Yellow", "Other"], key='tongue_coating', index=0)
-        st.selectbox("Tongue Moisture", options=["Dry", "Moist", "Sticky"], key='tongue_moisture', index=0)
-        st.number_input("Pulse Rate (beats per minute)", key='pulse_rate', value=70, min_value=0)
+    # Update session state
+    st.session_state.patient_info.update({
+        'name': name,
+        'dob': dob,
+        'gender': gender,
+        'occupation': occupation,
+        'chief_complaint': chief_complaint,
+        'complaint_background': complaint_background,
+        'medical_history': medical_history,
+        'lifestyle': lifestyle,
+        'current_medications': current_medications,
+    })
 
-        st.subheader("Additional Symptoms")
-        st.text_area("Any other relevant symptoms not mentioned above?", key='additional_symptoms', value=st.session_state.patient_info.get('additional_symptoms', ''))
-
-        st.form_submit_button("Save Information")
-
-
-        for i in range(10):
-            st.text_area(f"Question {i+1} Answer", key=f'question_{i}_answer', value=st.session_state.patient_info.get(f'question_{i}_answer', ''))
-
-    
+    # Generate Report button
     if st.button("Generate Report"):
         if calculate_progress() > 0.5:  # Require at least 50% completion
             st.session_state.generate_report = True
@@ -65,3 +63,5 @@ def patient_info_page():
         else:
             st.warning("Please fill in more patient information before generating a report. At least 50% completion is required.")
 
+# This line is not needed if this file is imported as a module
+# patient_info_page()
