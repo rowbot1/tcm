@@ -2,7 +2,7 @@ streamlit
 datetime
 jsonlib
 time
-sentence-transformers==2.2.2
+sentence-transformers
 pinecone-client
 groq
 python-docx
