@@ -132,27 +132,38 @@ def patient_info_page():
     # Generate Report button
     if st.button("Generate Report"):
         if calculate_progress() > 0.5:  # Require at least 50% completion
-            # Create a copy of the patient info and convert date to string
-            serializable_patient_info = st.session_state.patient_info.copy()
-            if 'dob' in serializable_patient_info and isinstance(serializable_patient_info['dob'], datetime.date):
-                serializable_patient_info['dob'] = serializable_patient_info['dob'].isoformat()
-            
-            user_input = json.dumps(serializable_patient_info, indent=2)
-            
-            # Query Pinecone for relevant context
-            query_results = query_pinecone(user_input)
-            context = "\n".join([match['metadata']['text'] for match in query_results['matches'] if 'text' in match['metadata']])
-            
-            start_time = time.time()
-            report = generate_diagnostic_report(context, user_input)
-            end_time = time.time()
-            
-            st.success(f"Report generated in {end_time - start_time:.2f} seconds")
-            
-            # Save the report to session state
-            st.session_state.generated_report = report
-            
-            st.write("Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+            try:
+                # Create a copy of the patient info and convert date to string
+                serializable_patient_info = st.session_state.patient_info.copy()
+                if 'dob' in serializable_patient_info and isinstance(serializable_patient_info['dob'], datetime.date):
+                    serializable_patient_info['dob'] = serializable_patient_info['dob'].isoformat()
+                
+                user_input = json.dumps(serializable_patient_info, indent=2)
+                
+                # Query Pinecone for relevant context
+                try:
+                    query_results = query_pinecone(user_input)
+                    context = "\n".join([match['metadata']['text'] for match in query_results['matches'] if 'text' in match['metadata']])
+                except Exception as e:
+                    st.error(f"Error querying Pinecone: {str(e)}")
+                    st.error("Proceeding with report generation without Pinecone context.")
+                    context = ""
+                
+                start_time = time.time()
+                report = generate_diagnostic_report(context, user_input)
+                end_time = time.time()
+                
+                if report:
+                    st.success(f"Report generated in {end_time - start_time:.2f} seconds")
+                    
+                    # Save the report to session state
+                    st.session_state.generated_report = report
+                    
+                    st.write("Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+                else:
+                    st.error("Failed to generate the report. Please try again.")
+            except Exception as e:
+                st.error(f"An error occurred during report generation: {str(e)}")
         else:
             st.warning("Please fill in more patient information before generating a report. At least 50% completion is required.")
 
