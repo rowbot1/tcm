@@ -1,4 +1,7 @@
 streamlit
+datetime
+json
+time
 sentence-transformers
 pinecone-client
 groq
@@ -6,5 +9,3 @@ python-docx
 gspread
 google-auth
 pandas
-st-gsheets-connection
-numpy 
