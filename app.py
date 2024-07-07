@@ -40,11 +40,6 @@ except Exception as e:  # Catch any other unexpected exceptions
     st.error("Please check your service account credentials and make sure they are correctly formatted.")
     sheet = None
 
-# ... (rest of your code) ...
-
-
-# Rest of your imports and code...
-
 # Initialize resources
 @st.cache_resource
 def init_resources():
@@ -161,7 +156,17 @@ def search_patient(name):
         return None
 
 def save_patient(patient_info):
-    sheet.append_row(list(patient_info.values()))
+    if sheet is None:
+        st.error("Google Sheets connection is not available. Patient saving is disabled.")
+        return
+    
+    # Convert dictionary values to a list and append
+    row_values = list(patient_info.values())
+    try:
+        sheet.append_row(row_values)  # Append directly to the existing sheet
+        st.success("New patient information saved")
+    except gspread.exceptions.APIError as e:
+        st.error(f"Error saving patient information: {e}")
 
 def update_patient(patient_info, row):
     for col, value in enumerate(patient_info.values(), start=1):
