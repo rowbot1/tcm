@@ -143,6 +143,9 @@ You are generating a report for {patient_name}, a {patient_age}-year-old patient
     return document
 
 def search_patient(name):
+    if sheet is None:
+        st.error("Google Sheets connection is not available. Patient search is disabled.")
+        return None
     try:
         cell = sheet.find(name)
         row = sheet.row_values(cell.row)
