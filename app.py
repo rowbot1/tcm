@@ -172,7 +172,15 @@ def save_patient(patient_info):
 
         # Ensure headers are correct and get them
         headers = sheet.row_values(1)
-        row_data = [patient_info.get(header, '') for header in headers]
+        st.write("Headers from sheet:", headers)
+        
+        # Prepare row data to match the headers
+        row_data = []
+        for header in headers:
+            if header in patient_info:
+                row_data.append(patient_info[header])
+            else:
+                row_data.append("")
         st.write("Row data to be saved:", row_data)
 
         # Check if patient already exists
@@ -419,3 +427,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
