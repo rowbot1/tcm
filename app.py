@@ -3,7 +3,7 @@ import datetime
 import json
 import time
 from sentence_transformers import SentenceTransformer
-from pinecone import Pinecone
+import pinecone
 import groq
 from docx import Document
 from io import BytesIO
@@ -49,8 +49,8 @@ except Exception as e:
 @st.cache_resource
 def init_resources():
     try:
-        pc = Pinecone(api_key=PINECONE_API_KEY)
-        index = pc.Index(INDEX_NAME)
+        pinecone.init(api_key=PINECONE_API_KEY, environment='us-west1-gcp')
+        index = pinecone.Index(INDEX_NAME)
         embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         groq_client = groq.Client(api_key=GROQ_API_KEY)
         return index, embedding_model, groq_client
