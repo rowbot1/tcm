@@ -7,6 +7,9 @@ from pinecone import Pinecone
 import groq
 from docx import Document
 from io import BytesIO
+import gspread
+from google.oauth2.service_account import Credentials
+import pandas as pd
 
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
@@ -23,6 +26,14 @@ st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 INDEX_NAME = "tcmapp"
+
+# Set up Google Sheets credentials
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
+gc = gspread.authorize(creds)
+
+# Open the Google Sheet (replace with your sheet ID)
+sheet = gc.open_by_key("your_sheet_id_here").sheet1
 
 # Initialize resources
 @st.cache_resource
@@ -128,8 +139,35 @@ You are generating a report for {patient_name}, a {patient_age}-year-old patient
     
     return document
 
+def search_patient(name):
+    try:
+        cell = sheet.find(name)
+        row = sheet.row_values(cell.row)
+        return pd.Series(row, index=sheet.row_values(1))
+    except:
+        return None
+
+def save_patient(patient_info):
+    sheet.append_row(list(patient_info.values()))
+
+def update_patient(patient_info, row):
+    for col, value in enumerate(patient_info.values(), start=1):
+        sheet.update_cell(row, col, value)
+
 def patient_info_page():
     st.title("Patient Information for TCM Diagnosis")
+    
+    # Search for existing patient
+    search_name = st.text_input("Search Patient Name")
+    if search_name:
+        patient_data = search_patient(search_name)
+        if patient_data is not None:
+            st.write("Patient found:")
+            st.write(patient_data)
+            if st.button("Load Patient Data"):
+                st.session_state.patient_info = patient_data.to_dict()
+        else:
+            st.write("Patient not found")
     
     # Basic Information
     st.subheader("Basic Information")
@@ -193,7 +231,25 @@ def patient_info_page():
     st.session_state.patient_info['lifestyle'] = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", st.session_state.patient_info.get('lifestyle', ''))
     st.session_state.patient_info['medical_history'] = st.text_area("Relevant Medical History", st.session_state.patient_info.get('medical_history', ''))
     
+    # Save patient information
+    if st.button("Save Patient Information"):
+        if 'name' in st.session_state.patient_info:
+            existing_patient = search_patient(st.session_state.patient_info['name'])
+            if existing_patient is not None:
+                update_patient(st.session_state.patient_info, existing_patient.name)
+                st.success("Patient information updated")
+            else:
+                save_patient(st.session_state.patient_info)
+                st.success("New patient information saved")
+        else:
+            st.error("Please enter patient name before saving")
+    
     # Generate Report button
+    if st.button("Generate TCM Diagnostic Report"):
+        if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
+            try:
+                # Create a copy of the patient info
+                serializable_patient_info = st.session_state.patient# Generate Report button
     if st.button("Generate TCM Diagnostic Report"):
         if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
             try:
