@@ -11,10 +11,10 @@ import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
 
-# Get API keys from Streamlit secrets
-PINECONE_API_KEY = st.secrets["pinecone"]["api_key"]
-GROQ_API_KEY = st.secrets["groq"]["api_key"]
-INDEX_NAME = st.secrets["pinecone"]["index_name"]  # Get the index name from secrets
+# Load API keys from Streamlit secrets
+PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
+GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
+INDEX_NAME = "tcmapp"
 
 # Set up Google Sheets credentials
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
