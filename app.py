@@ -42,32 +42,6 @@ def calculate_progress():
     filled_fields = sum(1 for field in required_fields if st.session_state.patient_info.get(field))
     return filled_fields / len(required_fields)
 
-def patient_info_page():
-    st.title("Patient Information")
-    
-    # Display progress bar
-    progress = calculate_progress()
-    st.progress(progress)
-    st.write(f"Progress: {progress:.0%}")
-    
-    # Basic Information
-    st.subheader("Basic Information")
-    st.session_state.patient_info['name'] = st.text_input("Patient Name", st.session_state.patient_info.get('name', ''))
-    st.session_state.patient_info['dob'] = st.date_input("Date of Birth", value=st.session_state.patient_info.get('dob', datetime.date.today()))
-    st.session_state.patient_info['gender'] = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
-    st.session_state.patient_info['occupation'] = st.text_input("Occupation", st.session_state.patient_info.get('occupation', ''))
-    
-    # Presenting Complaint
-    st.subheader("Presenting Complaint")
-    st.session_state.patient_info['chief_complaint'] = st.text_area("Chief Complaint", st.session_state.patient_info.get('chief_complaint', ''))
-    st.session_state.patient_info['complaint_background'] = st.text_area("Background of Main Complaint", st.session_state.patient_info.get('complaint_background', ''))
-    
-    # Medical History & Lifestyle
-    st.subheader("Medical History & Lifestyle")
-    st.session_state.patient_info['medical_history'] = st.text_area("Medical History", st.session_state.patient_info.get('medical_history', ''))
-    st.session_state.patient_info['lifestyle'] = st.text_area("Lifestyle Information", st.session_state.patient_info.get('lifestyle', ''))
-    st.session_state.patient_info['current_medications'] = st.text_area("Current Medications", st.session_state.patient_info.get('current_medications', ''))
-
 @st.cache_data
 def query_pinecone(query_text, top_k=5):
     query_vector = embedding_model.encode(query_text).tolist()
@@ -129,20 +103,40 @@ def generate_diagnostic_report(context, user_input):
     
     return full_report
 
-def generate_report_page():
-    st.title("Generate TCM Diagnostic Report")
+def patient_info_page():
+    st.title("Patient Information")
     
-    if st.session_state.patient_info:
-        st.write("Patient information found. Review the details below:")
-        
-        # Create a copy of the patient info and convert date to string
-        serializable_patient_info = st.session_state.patient_info.copy()
-        if 'dob' in serializable_patient_info and isinstance(serializable_patient_info['dob'], datetime.date):
-            serializable_patient_info['dob'] = serializable_patient_info['dob'].isoformat()
-        
-        st.json(serializable_patient_info)
-        
-        if st.button("Generate Report"):
+    # Display progress bar
+    progress = calculate_progress()
+    st.progress(progress)
+    st.write(f"Progress: {progress:.0%}")
+    
+    # Basic Information
+    st.subheader("Basic Information")
+    st.session_state.patient_info['name'] = st.text_input("Patient Name", st.session_state.patient_info.get('name', ''))
+    st.session_state.patient_info['dob'] = st.date_input("Date of Birth", value=st.session_state.patient_info.get('dob', datetime.date.today()))
+    st.session_state.patient_info['gender'] = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
+    st.session_state.patient_info['occupation'] = st.text_input("Occupation", st.session_state.patient_info.get('occupation', ''))
+    
+    # Presenting Complaint
+    st.subheader("Presenting Complaint")
+    st.session_state.patient_info['chief_complaint'] = st.text_area("Chief Complaint", st.session_state.patient_info.get('chief_complaint', ''))
+    st.session_state.patient_info['complaint_background'] = st.text_area("Background of Main Complaint", st.session_state.patient_info.get('complaint_background', ''))
+    
+    # Medical History & Lifestyle
+    st.subheader("Medical History & Lifestyle")
+    st.session_state.patient_info['medical_history'] = st.text_area("Medical History", st.session_state.patient_info.get('medical_history', ''))
+    st.session_state.patient_info['lifestyle'] = st.text_area("Lifestyle Information", st.session_state.patient_info.get('lifestyle', ''))
+    st.session_state.patient_info['current_medications'] = st.text_area("Current Medications", st.session_state.patient_info.get('current_medications', ''))
+
+    # Generate Report button
+    if st.button("Generate Report"):
+        if calculate_progress() > 0.5:  # Require at least 50% completion
+            # Create a copy of the patient info and convert date to string
+            serializable_patient_info = st.session_state.patient_info.copy()
+            if 'dob' in serializable_patient_info and isinstance(serializable_patient_info['dob'], datetime.date):
+                serializable_patient_info['dob'] = serializable_patient_info['dob'].isoformat()
+            
             user_input = json.dumps(serializable_patient_info, indent=2)
             
             # Query Pinecone for relevant context
@@ -158,9 +152,9 @@ def generate_report_page():
             # Save the report to session state
             st.session_state.generated_report = report
             
-            st.write("Report generated successfully. Go to the 'View Report' page to see and download the report.")
-    else:
-        st.warning("No patient information found. Please enter patient information in the 'Patient Information' page first.")
+            st.write("Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+        else:
+            st.warning("Please fill in more patient information before generating a report. At least 50% completion is required.")
 
 def view_report_page():
     st.title("View Report")
@@ -174,7 +168,7 @@ def view_report_page():
             mime="text/plain"
         )
     else:
-        st.warning("No report has been generated yet. Please go to the 'Generate Report' page to create a report.")
+        st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
 
 def main():
     st.title("Welcome to AcuAssist")
@@ -182,7 +176,7 @@ def main():
 
     # Navigation
     st.write("## Navigation")
-    page = st.radio("Go to", ["Patient Information", "Generate Report", "View Report"])
+    page = st.radio("Go to", ["Patient Information", "View Report"])
 
     # Clear Patient Data button
     if st.button("Clear Patient Data"):
@@ -191,8 +185,6 @@ def main():
     # Display the selected page
     if page == "Patient Information":
         patient_info_page()
-    elif page == "Generate Report":
-        generate_report_page()
     elif page == "View Report":
         view_report_page()
 
