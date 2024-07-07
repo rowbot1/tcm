@@ -187,6 +187,7 @@ def patient_info_page():
             if patient_data is not None:
                 st.success(f"Patient '{search_name}' found. Form fields have been populated.")
                 st.session_state.patient_info = patient_data
+                st.experimental_rerun()
             else:
                 st.warning(f"Patient '{search_name}' not found. Please enter new patient information.")
                 st.session_state.patient_info = {}
@@ -195,7 +196,7 @@ def patient_info_page():
     
     # Basic Information
     st.subheader("Basic Information")
-    st.session_state.patient_info['name'] = st.text_input("Patient Name", st.session_state.patient_info.get('name', ''))
+    st.session_state.patient_info['name'] = st.text_input("Patient Name", value=st.session_state.patient_info.get('name', ''))
     
     # Date of Birth with age calculation
     st.write("Date of Birth (DD/MM/YYYY)")
@@ -224,33 +225,33 @@ def patient_info_page():
     
     # Chief Complaint
     st.subheader("Chief Complaint")
-    st.session_state.patient_info['chief_complaint'] = st.text_area("Main Complaint", st.session_state.patient_info.get('chief_complaint', ''))
-    st.session_state.patient_info['complaint_duration'] = st.text_input("Duration of Complaint", st.session_state.patient_info.get('complaint_duration', ''))
+    st.session_state.patient_info['chief_complaint'] = st.text_area("Main Complaint", value=st.session_state.patient_info.get('chief_complaint', ''))
+    st.session_state.patient_info['complaint_duration'] = st.text_input("Duration of Complaint", value=st.session_state.patient_info.get('complaint_duration', ''))
     
     # TCM Four Diagnostic Methods
     st.subheader("TCM Four Diagnostic Methods")
     
     # 1. Inspection (望 wàng)
     st.write("1. Inspection (望 wàng)")
-    st.session_state.patient_info['complexion'] = st.text_input("Complexion", st.session_state.patient_info.get('complexion', ''))
+    st.session_state.patient_info['complexion'] = st.text_input("Complexion", value=st.session_state.patient_info.get('complexion', ''))
     st.session_state.patient_info['tongue_color'] = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(st.session_state.patient_info.get('tongue_color', 'Pale')))
     st.session_state.patient_info['tongue_coating'] = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(st.session_state.patient_info.get('tongue_coating', 'Thin White')))
-    st.session_state.patient_info['tongue_shape'] = st.text_input("Tongue Shape and Features", st.session_state.patient_info.get('tongue_shape', ''))
+    st.session_state.patient_info['tongue_shape'] = st.text_input("Tongue Shape and Features", value=st.session_state.patient_info.get('tongue_shape', ''))
     
     # 2. Auscultation and Olfaction (聞 wén)
     st.write("2. Auscultation and Olfaction (聞 wén)")
-    st.session_state.patient_info['voice_sound'] = st.text_input("Voice Sound", st.session_state.patient_info.get('voice_sound', ''))
-    st.session_state.patient_info['breath_odor'] = st.text_input("Breath Odor", st.session_state.patient_info.get('breath_odor', ''))
+    st.session_state.patient_info['voice_sound'] = st.text_input("Voice Sound", value=st.session_state.patient_info.get('voice_sound', ''))
+    st.session_state.patient_info['breath_odor'] = st.text_input("Breath Odor", value=st.session_state.patient_info.get('breath_odor', ''))
     
     # 3. Inquiry (問 wèn)
     st.write("3. Inquiry (問 wèn)")
     st.session_state.patient_info['cold_heat_sensation'] = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(st.session_state.patient_info.get('cold_heat_sensation', 'Normal')))
-    st.session_state.patient_info['sweating'] = st.text_input("Sweating", st.session_state.patient_info.get('sweating', ''))
-    st.session_state.patient_info['appetite'] = st.text_input("Appetite and Thirst", st.session_state.patient_info.get('appetite', ''))
-    st.session_state.patient_info['sleep'] = st.text_input("Sleep Pattern", st.session_state.patient_info.get('sleep', ''))
-    st.session_state.patient_info['bowel_movements'] = st.text_input("Bowel Movements", st.session_state.patient_info.get('bowel_movements', ''))
-    st.session_state.patient_info['urination'] = st.text_input("Urination", st.session_state.patient_info.get('urination', ''))
-    st.session_state.patient_info['pain'] = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", st.session_state.patient_info.get('pain', ''))
+    st.session_state.patient_info['sweating'] = st.text_input("Sweating", value=st.session_state.patient_info.get('sweating', ''))
+    st.session_state.patient_info['appetite'] = st.text_input("Appetite and Thirst", value=st.session_state.patient_info.get('appetite', ''))
+    st.session_state.patient_info['sleep'] = st.text_input("Sleep Pattern", value=st.session_state.patient_info.get('sleep', ''))
+    st.session_state.patient_info['bowel_movements'] = st.text_input("Bowel Movements", value=st.session_state.patient_info.get('bowel_movements', ''))
+    st.session_state.patient_info['urination'] = st.text_input("Urination", value=st.session_state.patient_info.get('urination', ''))
+    st.session_state.patient_info['pain'] = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", value=st.session_state.patient_info.get('pain', ''))
     
     # 4. Palpation (切 qiè)
     st.write("4. Palpation (切 qiè)")
@@ -259,9 +260,9 @@ def patient_info_page():
     
     # Additional TCM Diagnostic Information
     st.subheader("Additional TCM Diagnostic Information")
-    st.session_state.patient_info['emotions'] = st.text_area("Emotional State", st.session_state.patient_info.get('emotions', ''))
-    st.session_state.patient_info['lifestyle'] = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", st.session_state.patient_info.get('lifestyle', ''))
-    st.session_state.patient_info['medical_history'] = st.text_area("Relevant Medical History", st.session_state.patient_info.get('medical_history', ''))
+    st.session_state.patient_info['emotions'] = st.text_area("Emotional State", value=st.session_state.patient_info.get('emotions', ''))
+    st.session_state.patient_info['lifestyle'] = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", value=st.session_state.patient_info.get('lifestyle', ''))
+    st.session_state.patient_info['medical_history'] = st.text_area("Relevant Medical History", value=st.session_state.patient_info.get('medical_history', ''))
     
     # Save patient information
     if st.button("Save Patient Information"):
