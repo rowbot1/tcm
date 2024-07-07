@@ -1,8 +1,8 @@
-streamlit>=1.20.0            # Web framework for the UI
-python-docx>=0.8.11           # Create and manipulate Word documents
-gspread>=5.7.0               # Google Sheets API interaction
-oauth2client>=4.1.3          # Google API authentication (dependency for gspread)
-sentence-transformers>=2.2.2  # Sentence embedding model
-pinecone-client>=2.2.1        # Pinecone vector database client
-groq>=1.0.0                  # GROQ API client
-pandas>=1.5.0                 # Data analysis and manipulation (optional)
+streamlit>=1.20.0
+python-docx
+gspread
+oauth2client
+sentence-transformers
+pinecone-client
+groq
+pandas
