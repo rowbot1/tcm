@@ -1,8 +1,8 @@
-streamlit==1.24.0
-sentence-transformers==2.2.2
-pinecone-client==2.2.1
-groq==0.3.2
-python-docx==0.8.11
-gspread==5.10.0
-google-auth==2.22.0
-pandas==1.5.3
+streamlit
+sentence-transformers
+pinecone-client
+groq
+python-docx
+gspread
+google-auth
+pandas
