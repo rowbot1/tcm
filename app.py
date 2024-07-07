@@ -154,7 +154,8 @@ def search_patient(name):
         headers = sheet.row_values(1)
         patient_data = dict(zip(headers, row))
         return {k: (v if v != '' else None) for k, v in patient_data.items()}
-    except:
+    except Exception as e:
+        st.error(f"An error occurred while searching for the patient: {str(e)}")
         return None
 
 def save_patient(patient_info):
