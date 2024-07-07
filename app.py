@@ -176,6 +176,8 @@ def update_patient(patient_info, row):
     for col, header in enumerate(headers, start=1):
         sheet.update_cell(row, col, patient_info.get(header, ''))
 
+Fixed patient_info_page function with proper try-except block
+
 def patient_info_page():
     st.title("Patient Information for TCM Diagnosis")
     
@@ -196,7 +198,8 @@ def patient_info_page():
     
     # Basic Information
     st.subheader("Basic Information")
-    st.session_state.patient_info['name'] = st.text_input("Patient Name", value=st.session_state.patient_info.get('name', ''))
+    name = st.text_input("Patient Name", value=st.session_state.patient_info.get('name', ''))
+    st.session_state.patient_info['name'] = name
     
     # Date of Birth with age calculation
     st.write("Date of Birth (DD/MM/YYYY)")
@@ -221,13 +224,16 @@ def patient_info_page():
     age = calculate_age(dob)
     st.write(f"Patient Age: {age} years")
     
-    st.session_state.patient_info['gender'] = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
+    st.session_state.patient_info['gender'] = gender
     
     # Chief Complaint
     st.subheader("Chief Complaint")
-    st.session_state.patient_info['chief_complaint'] = st.text_area("Main Complaint", value=st.session_state.patient_info.get('chief_complaint', ''))
-    st.session_state.patient_info['complaint_duration'] = st.text_input("Duration of Complaint", value=st.session_state.patient_info.get('complaint_duration', ''))
-    
+    chief_complaint = st.text_area("Main Complaint", value=st.session_state.patient_info.get('chief_complaint', ''))
+    st.session_state.patient_info['chief_complaint'] = chief_complaint
+    complaint_duration = st.text_input("Duration of Complaint", value=st.session_state.patient_info.get('complaint_duration', ''))
+    st.session_state.patient_info['complaint_duration'] = complaint_duration
+        
     # TCM Four Diagnostic Methods
     st.subheader("TCM Four Diagnostic Methods")
     
@@ -266,18 +272,12 @@ def patient_info_page():
     
     # Save patient information
     if st.button("Save Patient Information"):
-        if 'name' in st.session_state.patient_info and st.session_state.patient_info['name']:
-            existing_patient = search_patient(st.session_state.patient_info['name'])
-            if existing_patient is not None:
-                cell = sheet.find(st.session_state.patient_info['name'])
-                update_patient(st.session_state.patient_info, cell.row)
-                st.success("Patient information updated")
-            else:
-                save_patient(st.session_state.patient_info)
-                st.success("New patient information saved")
+        if name:
+            save_patient(st.session_state.patient_info)
+            st.success("Patient information saved successfully")
         else:
             st.error("Please enter patient name before saving")
-    
+        
     # Generate Report button
     if st.button("Generate TCM Diagnostic Report"):
         if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
