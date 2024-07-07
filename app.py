@@ -399,8 +399,8 @@ def view_report_page():
         st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
 
 def main():
-    st.title("Welcome to AcuAssist")
-    st.write("This application helps generate comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on patient information and symptoms.")
+    st.title("Welcome to AccuAssist")
+    st.write("This application helps generate comprehensive Traditional Chinese Medicine diagnostic reports based on patient information and symptoms.")
 
     # Navigation
     st.write("## Navigation")
