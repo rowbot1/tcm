@@ -8,32 +8,35 @@ import groq
 from docx import Document
 from io import BytesIO
 import gspread
-from google.oauth2.service_account import Credentials
 import pandas as pd
-
-# Set up Streamlit
-st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
-
-# Custom CSS to hide the sidebar
-hide_sidebar_style = """
-    <style>
-        div[data-testid="stSidebar"] {display: none;}
-    </style>
-"""
-st.markdown(hide_sidebar_style, unsafe_allow_html=True)
-
-# Load API keys from Streamlit secrets
-PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
-GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
-INDEX_NAME = "tcmapp"
+from google.oauth2.service_account import Credentials
 
 # Set up Google Sheets credentials
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-gc = gspread.authorize(creds)
 
-# Open the Google Sheet
-sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
+try:
+    # Attempt to load and parse the service account info
+    service_account_info = st.secrets["gcp_service_account"]
+    if isinstance(service_account_info, str):
+        # If it's a string, try to parse it as JSON
+        service_account_info = json.loads(service_account_info)
+    
+    creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
+    gc = gspread.authorize(creds)
+    
+    # Open the Google Sheet
+    sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
+    st.success("Successfully connected to Google Sheets")
+except json.JSONDecodeError:
+    st.error("Error: The service account info is not valid JSON. Please check your secrets configuration.")
+except KeyError as e:
+    st.error(f"Error: Missing key in secrets - {str(e)}. Please check your secrets configuration.")
+except Exception as e:
+    st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
+    st.error("Please check your service account credentials and make sure they are correctly formatted.")
+    sheet = None
+
+# Rest of your imports and code...
 
 # Initialize resources
 @st.cache_resource
