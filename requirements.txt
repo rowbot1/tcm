@@ -1,6 +1,6 @@
 streamlit
 sentence-transformers
-pinecone-client
+pinecone-client==2.1.0
 groq
 python-docx
 gspread
