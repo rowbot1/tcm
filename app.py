@@ -41,8 +41,24 @@ def clear_patient_data():
     st.success("Patient data has been cleared.")
 
 def calculate_progress():
-    required_fields = ['name', 'dob', 'gender', 'occupation', 'chief_complaint', 'complaint_background', 
-                       'medical_history', 'lifestyle', 'current_medications']
+    required_fields = [
+        'name', 'dob', 'gender', 'occupation', 'chief_complaint', 'complaint_background', 
+        'medical_history', 'lifestyle', 'current_medications', 'signs_symptoms',
+        'aggravating_factors', 'relieving_factors', 'tongue_diagnosis', 'pulse_diagnosis',
+        'diagnosis', 'treatment_principles', 'acupuncture_points', 'herbal_prescriptions',
+        'treatment_date', 'points_used_session', 'patient_feedback', 'therapist_notes'
+    ]
+    
+    # Add the 10 questions fields
+    questions = [
+        "chills_and/or_fever", "sweating_and/or_hot_flushes", "headaches",
+        "any_problems_with_chest_and/or_digestion", "food_&_appetite", "stools_&_urination",
+        "sleep", "deafness/tinnitus", "thirst_&_drink", "pain"
+    ]
+    for question in questions:
+        required_fields.append(f"{question}_checkbox")
+        required_fields.append(f"{question}_details")
+
     filled_fields = sum(1 for field in required_fields if st.session_state.patient_info.get(field))
     return filled_fields / len(required_fields)
 
