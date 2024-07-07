@@ -11,6 +11,11 @@ import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
 
+# Get API keys from Streamlit secrets
+PINECONE_API_KEY = st.secrets["pinecone"]["api_key"]
+GROQ_API_KEY = st.secrets["groq"]["api_key"]
+INDEX_NAME = st.secrets["pinecone"]["index_name"]  # Get the index name from secrets
+
 # Set up Google Sheets credentials
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
@@ -26,11 +31,11 @@ try:
     # Try to authorize and open the sheet
     try:
         gc = gspread.authorize(creds)
-        sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
+        sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1  # Get the sheet ID directly from secrets
         st.success("Successfully connected to Google Sheets")
     except gspread.exceptions.GSpreadException as e:
         st.error(f"Google Sheets authorization error: {e}")
-        sheet = None 
+        sheet = None
 except json.JSONDecodeError:
     st.error("Error: The service account info is not valid JSON. Please check your secrets configuration.")
 except KeyError as e:
