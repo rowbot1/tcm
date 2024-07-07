@@ -9,5 +9,3 @@ python-docx
 gspread
 google-auth
 pandas
-git+https://github.com/streamlit/gsheets-connection
-
