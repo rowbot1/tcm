@@ -6,3 +6,4 @@ sentence-transformers
 pinecone-client
 groq
 pandas
+google-auth
