@@ -12,7 +12,7 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 
 # Set up Streamlit
-st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="AccuAssist", layout="wide", initial_sidebar_state="collapsed")
 
 # Custom CSS to hide the sidebar
 hide_sidebar_style = """
