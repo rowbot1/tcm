@@ -150,10 +150,13 @@ def search_patient(name):
         return None
     try:
         cell = sheet.find(name)
-        row = sheet.row_values(cell.row)
-        headers = sheet.row_values(1)
-        patient_data = dict(zip(headers, row))
-        return {k: (v if v != '' else None) for k, v in patient_data.items()}
+        if cell:
+            row = sheet.row_values(cell.row)
+            headers = sheet.row_values(1)
+            patient_data = dict(zip(headers, row))
+            return {k: (v if v != '' else None) for k, v in patient_data.items()}
+        else:
+            return None
     except Exception as e:
         st.error(f"An error occurred while searching for the patient: {str(e)}")
         return None
