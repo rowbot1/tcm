@@ -156,7 +156,12 @@ def search_patient(name):
         cell = sheet.find(name)
         row = sheet.row_values(cell.row)
         headers = sheet.row_values(1)  # Assuming the first row contains headers
-        return dict(zip(headers, row))
+        patient_data = dict(zip(headers, row))
+        
+        # Convert empty strings to None for consistency
+        patient_data = {k: (v if v != '' else None) for k, v in patient_data.items()}
+        
+        return patient_data
     except:
         return None
 
@@ -189,8 +194,9 @@ def patient_info_page():
         if search_name:
             patient_data = search_patient(search_name)
             if patient_data is not None:
-                st.success(f"Patient '{search_name}' found. Form fields have been populated.")
                 st.session_state.searched_patient_data = patient_data
+                st.success(f"Patient '{search_name}' found. Form fields will be populated.")
+                st.experimental_rerun()  # Force a re-render of the page
             else:
                 st.warning(f"Patient '{search_name}' not found. Please enter new patient information.")
                 st.session_state.searched_patient_data = None
