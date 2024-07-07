@@ -134,10 +134,16 @@ def generate_report_page():
     
     if st.session_state.patient_info:
         st.write("Patient information found. Review the details below:")
-        st.json(st.session_state.patient_info)
+        
+        # Create a copy of the patient info and convert date to string
+        serializable_patient_info = st.session_state.patient_info.copy()
+        if 'dob' in serializable_patient_info and isinstance(serializable_patient_info['dob'], datetime.date):
+            serializable_patient_info['dob'] = serializable_patient_info['dob'].isoformat()
+        
+        st.json(serializable_patient_info)
         
         if st.button("Generate Report"):
-            user_input = json.dumps(st.session_state.patient_info, indent=2)
+            user_input = json.dumps(serializable_patient_info, indent=2)
             
             # Query Pinecone for relevant context
             query_results = query_pinecone(user_input)
