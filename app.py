@@ -3,7 +3,7 @@ import datetime
 import json
 import time
 from sentence_transformers import SentenceTransformer
-import pinecone
+import pinecone as Pinecone
 import groq
 from docx import Document
 from io import BytesIO
