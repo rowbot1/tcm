@@ -20,21 +20,28 @@ try:
     if isinstance(service_account_info, str):
         # If it's a string, try to parse it as JSON
         service_account_info = json.loads(service_account_info)
-    
+
     creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
-    gc = gspread.authorize(creds)
-    
-    # Open the Google Sheet
-    sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
-    st.success("Successfully connected to Google Sheets")
+
+    # Try to authorize and open the sheet
+    try:
+        gc = gspread.authorize(creds)
+        sheet = gc.open_by_key(st.secrets["google_sheets"]["sheet_id"]).sheet1
+        st.success("Successfully connected to Google Sheets")
+    except gspread.exceptions.GSpreadException as e:
+        st.error(f"Google Sheets authorization error: {e}")
+        sheet = None 
 except json.JSONDecodeError:
     st.error("Error: The service account info is not valid JSON. Please check your secrets configuration.")
 except KeyError as e:
     st.error(f"Error: Missing key in secrets - {str(e)}. Please check your secrets configuration.")
-except Exception as e:
+except Exception as e:  # Catch any other unexpected exceptions
     st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
     st.error("Please check your service account credentials and make sure they are correctly formatted.")
     sheet = None
+
+# ... (rest of your code) ...
+
 
 # Rest of your imports and code...
 
