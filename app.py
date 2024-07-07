@@ -63,6 +63,7 @@ def clear_patient_data():
     st.session_state.patient_info = {}
     st.session_state.generated_report = None
     st.session_state.search_success = None
+    st.session_state.found_patient_data = None
     st.success("Patient data has been cleared.")
 
 def calculate_age(born):
@@ -180,19 +181,6 @@ def save_patient(patient_info):
     except Exception as e:
         st.error(f"An error occurred while saving patient information: {str(e)}")
 
-def search_callback():
-    search_name = st.session_state.search_input
-    if search_name:
-        patient_data = search_patient(search_name)
-        if patient_data is not None:
-            st.session_state.patient_info = patient_data
-            st.session_state.search_success = True
-        else:
-            st.session_state.patient_info = {}
-            st.session_state.search_success = False
-    else:
-        st.session_state.search_success = None
-
 def patient_info_page():
     st.title("Patient Information for TCM Diagnosis")
     
@@ -201,14 +189,33 @@ def patient_info_page():
         st.session_state.patient_info = {}
     if 'search_success' not in st.session_state:
         st.session_state.search_success = None
+    if 'found_patient_data' not in st.session_state:
+        st.session_state.found_patient_data = None
     
     # Search form
-    st.text_input("Search Patient Name", key="search_input", on_change=search_callback)
+    search_name = st.text_input("Search Patient Name", key="search_input")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Search"):
+            if search_name:
+                patient_data = search_patient(search_name)
+                if patient_data is not None:
+                    st.session_state.found_patient_data = patient_data
+                    st.session_state.search_success = True
+                    st.success(f"Patient '{search_name}' found. Click 'Populate Form' to fill in the data.")
+                else:
+                    st.session_state.found_patient_data = None
+                    st.session_state.search_success = False
+                    st.warning(f"Patient '{search_name}' not found. Please enter new patient information.")
+            else:
+                st.warning("Please enter a patient name to search.")
     
-    if st.session_state.search_success is True:
-        st.success(f"Patient '{st.session_state.search_input}' found. Form fields have been populated.")
-    elif st.session_state.search_success is False:
-        st.warning(f"Patient '{st.session_state.search_input}' not found. Please enter new patient information.")
+    with col2:
+        if st.button("Populate Form", disabled=not st.session_state.search_success):
+            if st.session_state.found_patient_data:
+                st.session_state.patient_info = st.session_state.found_patient_data.copy()
+                st.success("Form populated with patient data.")
+                st.experimental_rerun()
     
     # Form fields
     st.subheader("Basic Information")
@@ -358,6 +365,7 @@ def patient_info_page():
     if st.button("Clear Form"):
         st.session_state.patient_info = {}
         st.session_state.search_success = None
+        st.session_state.found_patient_data = None
         st.experimental_rerun()
 
 def view_report_page():
