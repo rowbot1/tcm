@@ -3,9 +3,7 @@ import datetime
 import json
 import time
 from sentence_transformers import SentenceTransformer
-from qdrant_client import QdrantClient
-from qdrant_client.http import models as rest
-from qdrant_client.http.exceptions import UnexpectedResponse
+import weaviate
 import groq
 from docx import Document
 from io import BytesIO
@@ -25,10 +23,10 @@ hide_sidebar_style = """
 st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 
 # Load API keys from Streamlit secrets
-QDRANT_URL = st.secrets["api_keys"]["QDRANT_URL"]
-QDRANT_API_KEY = st.secrets["api_keys"]["QDRANT_API_KEY"]
+WEAVIATE_URL = st.secrets["api_keys"]["WEAVIATE_URL"]
+WEAVIATE_API_KEY = st.secrets["api_keys"]["WEAVIATE_API_KEY"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
-COLLECTION_NAME = "tcmapp"
+CLASS_NAME = "TCMApp"
 
 # Set up Google Sheets credentials
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -52,36 +50,33 @@ except Exception as e:
 @st.cache_resource
 def init_resources():
     try:
-        st.write(f"Attempting to connect to Qdrant at URL: {QDRANT_URL}")
-        qdrant_client = QdrantClient(
-            url=QDRANT_URL,
-            api_key=QDRANT_API_KEY,
+        st.write(f"Attempting to connect to Weaviate at URL: {WEAVIATE_URL}")
+        auth_config = weaviate.auth.AuthApiKey(api_key=WEAVIATE_API_KEY)
+        weaviate_client = weaviate.Client(
+            url=WEAVIATE_URL,
+            auth_client_secret=auth_config,
         )
-        st.write("Successfully created Qdrant client")
+        st.write("Successfully created Weaviate client")
         
         # Test the connection
         try:
-            st.write("Testing Qdrant connection...")
-            collections = qdrant_client.get_collections()
-            st.write(f"Qdrant collections: {collections}")
+            st.write("Testing Weaviate connection...")
+            schema = weaviate_client.schema.get()
+            st.write(f"Weaviate schema: {schema}")
             
-            if not any(collection.name == COLLECTION_NAME for collection in collections.collections):
-                st.write(f"Creating new collection: {COLLECTION_NAME}")
-                qdrant_client.create_collection(
-                    collection_name=COLLECTION_NAME,
-                    vectors_config=rest.VectorParams(size=384, distance=rest.Distance.COSINE),
-                )
+            if not weaviate_client.schema.exists(CLASS_NAME):
+                st.write(f"Creating new class: {CLASS_NAME}")
+                class_obj = {
+                    "class": CLASS_NAME,
+                    "vectorizer": "text2vec-transformers"
+                }
+                weaviate_client.schema.create_class(class_obj)
             else:
-                st.write(f"Collection {COLLECTION_NAME} already exists")
+                st.write(f"Class {CLASS_NAME} already exists")
             
-            st.success("Qdrant connection and setup successful!")
-        except UnexpectedResponse as e:
-            st.error(f"Error interacting with Qdrant: {str(e)}")
-            st.error(f"Response status: {e.status_code}")
-            st.error(f"Response content: {e.content}")
-            return None, None, None
+            st.success("Weaviate connection and setup successful!")
         except Exception as e:
-            st.error(f"Unexpected error when interacting with Qdrant: {str(e)}")
+            st.error(f"Error interacting with Weaviate: {str(e)}")
             return None, None, None
         
         st.write("Initializing embedding model...")
@@ -89,12 +84,12 @@ def init_resources():
         st.write("Initializing Groq client...")
         groq_client = groq.Client(api_key=GROQ_API_KEY)
         st.write("Resources initialized successfully")
-        return qdrant_client, embedding_model, groq_client
+        return weaviate_client, embedding_model, groq_client
     except Exception as e:
         st.error(f"Error initializing resources: {str(e)}")
         return None, None, None
 
-qdrant_client, embedding_model, groq_client = init_resources()
+weaviate_client, embedding_model, groq_client = init_resources()
 
 def clear_patient_data():
     st.session_state.patient_info = {}
@@ -108,16 +103,20 @@ def calculate_age(born):
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
 @st.cache_data
-def query_qdrant(query_text, top_k=5):
-    if qdrant_client is None:
-        raise ValueError("Qdrant client is not initialized")
+def query_weaviate(query_text, top_k=5):
+    if weaviate_client is None:
+        raise ValueError("Weaviate client is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
-    results = qdrant_client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        limit=top_k
+    
+    result = (
+        weaviate_client.query
+        .get(CLASS_NAME, ["text"])
+        .with_near_vector({"vector": query_vector})
+        .with_limit(top_k)
+        .do()
     )
-    return results
+    
+    return result['data']['Get'][CLASS_NAME]
 
 def generate_diagnostic_report_part(system_message, user_message):
     try:
@@ -386,17 +385,17 @@ def patient_info_page():
                 
                 user_input = json.dumps(serializable_patient_info, indent=2)
                 
-                # Query Qdrant for relevant context (if available)
+                # Query Weaviate for relevant context (if available)
                 context = ""
-                if qdrant_client is not None and embedding_model is not None:
+                if weaviate_client is not None and embedding_model is not None:
                     try:
-                        query_results = query_qdrant(user_input)
-                        context = "\n".join([match.payload.get('text', '') for match in query_results])
+                        query_results = query_weaviate(user_input)
+                        context = "\n".join([item['text'] for item in query_results])
                     except Exception as e:
-                        st.error(f"Error querying Qdrant: {str(e)}")
-                        st.warning("Proceeding with report generation without Qdrant context.")
+                        st.error(f"Error querying Weaviate: {str(e)}")
+                        st.warning("Proceeding with report generation without Weaviate context.")
                 else:
-                    st.warning("Qdrant or embedding model not initialized. Proceeding without context.")
+                    st.warning("Weaviate or embedding model not initialized. Proceeding without context.")
                 
                 start_time = time.time()
                 report = generate_diagnostic_report(context, user_input)
