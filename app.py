@@ -113,19 +113,31 @@ def calculate_age(born):
 
 @st.cache_data
 def query_weaviate(query_text, top_k=5):
-    if weaviate_client is None:
-        raise ValueError("Weaviate client is not initialized")
+    if weaviate_client is None or embedding_model is None:
+        raise ValueError("Weaviate client or embedding model is not initialized")
+    
     query_vector = embedding_model.encode(query_text).tolist()
     
-    result = (
-        weaviate_client.query
-        .get(CLASS_NAME, ["text"])
-        .with_near_vector({"vector": query_vector})
-        .with_limit(top_k)
-        .do()
-    )
-    
-    return result['data']['Get'][CLASS_NAME]
+    try:
+        result = (
+            weaviate_client.query
+            .get(CLASS_NAME, ["text", "file_name", "chunk_index"])
+            .with_near_vector({"vector": query_vector})
+            .with_limit(top_k)
+            .do()
+        )
+        
+        return result['data']['Get'][CLASS_NAME]
+    except weaviate.exceptions.UnexpectedStatusCodeException as e:
+        if e.status_code == 404:
+            st.warning(f"Class {CLASS_NAME} not found in Weaviate. Please ensure it exists or use a key with write permissions to create it.")
+            return []
+        else:
+            st.error(f"Error querying Weaviate: {str(e)}")
+            return []
+    except Exception as e:
+        st.error(f"Unexpected error when querying Weaviate: {str(e)}")
+        return []
 
 def generate_diagnostic_report_part(system_message, user_message):
     try:
