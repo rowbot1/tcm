@@ -299,7 +299,7 @@ def patient_info_page():
     cold_heat_sensation = st.selectbox(
         "Cold/Heat Sensation",
         ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"],
-        key="colcold_heat_sensation = st.selectbox(
+        key="cold_heat_sensation = st.selectbox(
         "Cold/Heat Sensation",
         ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"],
         key="cold_heat_sensation",
