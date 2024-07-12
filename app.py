@@ -48,17 +48,23 @@ except Exception as e:
     st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
     sheet = None
 
+# Initialize resources
 @st.cache_resource
 def init_resources():
     try:
         st.write(f"Attempting to connect to Qdrant at URL: {QDRANT_URL}")
-        qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=10)
+        qdrant_client = QdrantClient(
+            url=QDRANT_URL,
+            api_key=QDRANT_API_KEY,
+        )
+        st.write("Successfully created Qdrant client")
         
-        # Check if collection exists, if not create it
+        # Test the connection
         try:
-            st.write("Attempting to get collections...")
+            st.write("Testing Qdrant connection...")
             collections = qdrant_client.get_collections()
-            st.write(f"Collections retrieved: {collections}")
+            st.write(f"Qdrant collections: {collections}")
+            
             if not any(collection.name == COLLECTION_NAME for collection in collections.collections):
                 st.write(f"Creating new collection: {COLLECTION_NAME}")
                 qdrant_client.create_collection(
@@ -67,8 +73,10 @@ def init_resources():
                 )
             else:
                 st.write(f"Collection {COLLECTION_NAME} already exists")
+            
+            st.success("Qdrant connection and setup successful!")
         except UnexpectedResponse as e:
-            st.error(f"Error connecting to Qdrant: {str(e)}")
+            st.error(f"Error interacting with Qdrant: {str(e)}")
             st.error(f"Response status: {e.status_code}")
             st.error(f"Response content: {e.content}")
             return None, None, None
@@ -321,12 +329,6 @@ def patient_info_page():
     bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=st.session_state.patient_info.get('bowel_movements', ''))
     urination = st.text_input("Urination", key="urination", value=st.session_state.patient_info.get('urination', ''))
     pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=st.session_state.patient_info.get('pain', ''))
-    sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
-    appetite = st.text_input("Appetite and Thirst", key="appetite", value=st.session_state.patient_info.get('appetite', ''))
-    sleep = st.text_input("Sleep Pattern", key="sleep", value=st.session_state.patient_info.get('sleep', ''))
-    bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=st.session_state.patient_info.get('bowel_movements', ''))
-    urination = st.text_input("Urination", key="urination", value=st.session_state.patient_info.get('urination', ''))
-    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=st.session_state.patient_info.get('pain', ''))
     
     # 4. Palpation (切 qiè)
     st.write("4. Palpation (切 qiè)")
@@ -461,18 +463,5 @@ def main():
     elif page == "View Report":
         view_report_page()
 
-def test_qdrant_connection():
-    st.write("Testing Qdrant connection...")
-    try:
-        client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=10)
-        health = client.health()
-        st.write(f"Qdrant health check result: {health}")
-        collections = client.get_collections()
-        st.write(f"Qdrant collections: {collections}")
-        st.success("Qdrant connection test successful!")
-    except Exception as e:
-        st.error(f"Qdrant connection test failed: {str(e)}")
-
 if __name__ == "__main__":
     main()
-    test_qdrant_connection()
