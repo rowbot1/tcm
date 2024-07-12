@@ -1,11 +1,9 @@
 streamlit
+datetime
 sentence-transformers
-pinecone-client==2.1.0
+weaviate-client
 groq
 python-docx
 gspread
 google-auth
 pandas
-numpy
-datetime
-qdrant-client
