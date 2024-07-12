@@ -3,7 +3,8 @@ import datetime
 import json
 import time
 from sentence_transformers import SentenceTransformer
-import pinecone
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams
 import groq
 from docx import Document
 from io import BytesIO
@@ -23,9 +24,10 @@ hide_sidebar_style = """
 st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 
 # Load API keys from Streamlit secrets
-PINECONE_API_KEY = st.secrets["api_keys"]["PINECONE_API_KEY"]
+QDRANT_URL = st.secrets["api_keys"]["QDRANT_URL"]
+QDRANT_API_KEY = st.secrets["api_keys"]["QDRANT_API_KEY"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
-INDEX_NAME = "tcmapp"
+COLLECTION_NAME = "tcmapp"
 
 # Set up Google Sheets credentials
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -49,22 +51,24 @@ except Exception as e:
 @st.cache_resource
 def init_resources():
     try:
-        pc = pinecone.Pinecone(api_key=PINECONE_API_KEY)
-        if INDEX_NAME not in pc.list_indexes().names():
-            pc.create_index(
-                name=INDEX_NAME,
-                dimension=384,  # Adjust the dimension according to your model
-                metric='cosine'  # Adjust the metric as needed
+        qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+        
+        # Check if collection exists, if not create it
+        collections = qdrant_client.get_collections().collections
+        if not any(collection.name == COLLECTION_NAME for collection in collections):
+            qdrant_client.create_collection(
+                collection_name=COLLECTION_NAME,
+                vectors_config=VectorParams(size=384, distance=Distance.COSINE),
             )
-        index = pc.Index(INDEX_NAME)
+        
         embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         groq_client = groq.Client(api_key=GROQ_API_KEY)
-        return index, embedding_model, groq_client
+        return qdrant_client, embedding_model, groq_client
     except Exception as e:
         st.error(f"Error initializing resources: {str(e)}")
         return None, None, None
 
-index, embedding_model, groq_client = init_resources()
+qdrant_client, embedding_model, groq_client = init_resources()
 
 def clear_patient_data():
     st.session_state.patient_info = {}
@@ -78,11 +82,15 @@ def calculate_age(born):
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
 @st.cache_data
-def query_pinecone(query_text, top_k=5):
-    if index is None:
-        raise ValueError("Pinecone index is not initialized")
+def query_qdrant(query_text, top_k=5):
+    if qdrant_client is None:
+        raise ValueError("Qdrant client is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
-    results = index.query(vector=query_vector, top_k=top_k, include_metadata=True)
+    results = qdrant_client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=top_k
+    )
     return results
 
 def generate_diagnostic_report_part(system_message, user_message):
@@ -284,143 +292,4 @@ def patient_info_page():
     cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(st.session_state.patient_info.get('cold_heat_sensation', 'Normal')))
     sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
     appetite = st.text_input("Appetite and Thirst", key="appetite", value=st.session_state.patient_info.get('appetite', ''))
-    sleep = st.text_input("Sleep Pattern", key="sleep", value=st.session_state.patient_info.get('sleep', ''))
-    bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=st.session_state.patient_info.get('bowel_movements', ''))
-    urination = st.text_input("Urination", key="urination", value=st.session_state.patient_info.get('urination', ''))
-    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=st.session_state.patient_info.get('pain', ''))
-    
-    # 4. Palpation (切 qiè)
-    st.write("4. Palpation (切 qiè)")
-    pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(st.session_state.patient_info.get('pulse_rate', 70)))
-    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], key="pulse_quality", default=st.session_state.patient_info.get('pulse_quality', []))
-    
-    # Additional TCM Diagnostic Information
-    st.subheader("Additional TCM Diagnostic Information")
-    emotions = st.text_area("Emotional State", key="emotions", value=st.session_state.patient_info.get('emotions', ''))
-    lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=st.session_state.patient_info.get('lifestyle', ''))
-    medical_history = st.text_area("Relevant Medical History", key="medical_history", value=st.session_state.patient_info.get('medical_history', ''))
-
-    # Update session state
-    st.session_state.patient_info.update({
-        'name': name,
-        'dob': dob_str,
-        'gender': gender,
-        'chief_complaint': chief_complaint,
-        'complaint_duration': complaint_duration,
-        'complexion': complexion,
-        'tongue_color': tongue_color,
-        'tongue_coating': tongue_coating,
-        'tongue_shape': tongue_shape,
-        'voice_sound': voice_sound,
-        'breath_odor': breath_odor,
-        'cold_heat_sensation': cold_heat_sensation,
-        'sweating': sweating,
-        'appetite': appetite,
-        'sleep': sleep,
-        'bowel_movements': bowel_movements,
-        'urination': urination,
-        'pain': pain,
-        'pulse_rate': pulse_rate,
-        'pulse_quality': pulse_quality,
-        'emotions': emotions,
-        'lifestyle': lifestyle,
-        'medical_history': medical_history
-    })
-
-    # Save patient information
-    if st.button("Save Patient Information"):
-        if name:
-            save_patient(st.session_state.patient_info)
-            st.success("Patient information saved successfully")
-        else:
-            st.error("Please enter patient name before saving")
-
-    # Generate Report button
-    if st.button("Generate TCM Diagnostic Report"):
-        if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
-            try:
-                # Create a copy of the patient info
-                serializable_patient_info = st.session_state.patient_info.copy()
-                serializable_patient_info['age'] = age  # Add calculated age to the report data
-                
-                user_input = json.dumps(serializable_patient_info, indent=2)
-                
-                # Query Pinecone for relevant context (if available)
-                context = ""
-                if index is not None and embedding_model is not None:
-                    try:
-                        query_results = query_pinecone(user_input)
-                        context = "\n".join([match['metadata']['text'] for match in query_results['matches'] if 'text' in match['metadata']])
-                    except Exception as e:
-                        st.error(f"Error querying Pinecone: {str(e)}")
-                        st.warning("Proceeding with report generation without Pinecone context.")
-                else:
-                    st.warning("Pinecone or embedding model not initialized. Proceeding without context.")
-                
-                start_time = time.time()
-                report = generate_diagnostic_report(context, user_input)
-                end_time = time.time()
-                
-                if report:
-                    st.success(f"Report generated in {end_time - start_time:.2f} seconds")
-                    
-                    # Save the report to session state
-                    st.session_state.generated_report = report
-                    
-                    st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
-                else:
-                    st.error("Failed to generate the report. Please try again.")
-            except Exception as e:
-                st.error(f"An error occurred during report generation: {str(e)}")
-        else:
-            st.warning("Please fill in more patient information before generating a report.")
-
-    # Clear form button
-    if st.button("Clear Form"):
-        st.session_state.patient_info = {}
-        st.session_state.search_success = None
-        st.session_state.found_patient_data = None
-        st.experimental_rerun()
-
-def view_report_page():
-    st.title("View TCM Diagnostic Report")
-    if 'generated_report' in st.session_state and st.session_state.generated_report:
-        # Display the report content
-        doc = st.session_state.generated_report
-        for paragraph in doc.paragraphs:
-            st.write(paragraph.text)
-        
-        # Add a download button for the report
-        buffer = BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-        
-        st.download_button(
-            label="Download Report as Word Document",
-            data=buffer,
-            file_name="tcm_diagnostic_report.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-    else:
-        st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
-
-def main():
-    st.title("Welcome to AccuAssist")
-    st.write("This application helps generate comprehensive Traditional Chinese Medicine diagnostic reports based on patient information and symptoms.")
-
-    # Navigation
-    st.write("## Navigation")
-    page = st.radio("Go to", ["Patient Information", "View Report"])
-
-    # Clear Patient Data button
-    if st.button("Clear Patient Data"):
-        clear_patient_data()
-
-    # Display the selected page
-    if page == "Patient Information":
-        patient_info_page()
-    elif page == "View Report":
-        view_report_page()
-
-if __name__ == "__main__":
-    main()
+    sleep = st
