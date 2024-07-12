@@ -299,14 +299,17 @@ def patient_info_page():
     cold_heat_sensation = st.selectbox(
         "Cold/Heat Sensation",
         ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"],
-        key="cold_heat_sensation = st.selectbox(
-        "Cold/Heat Sensation",
-        ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"],
         key="cold_heat_sensation",
         index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(
             st.session_state.patient_info.get('cold_heat_sensation', 'Normal')
         )
     )
+    sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
+    appetite = st.text_input("Appetite and Thirst", key="appetite", value=st.session_state.patient_info.get('appetite', ''))
+    sleep = st.text_input("Sleep Pattern", key="sleep", value=st.session_state.patient_info.get('sleep', ''))
+    bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=st.session_state.patient_info.get('bowel_movements', ''))
+    urination = st.text_input("Urination", key="urination", value=st.session_state.patient_info.get('urination', ''))
+    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=st.session_state.patient_info.get('pain', ''))
     sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
     appetite = st.text_input("Appetite and Thirst", key="appetite", value=st.session_state.patient_info.get('appetite', ''))
     sleep = st.text_input("Sleep Pattern", key="sleep", value=st.session_state.patient_info.get('sleep', ''))
