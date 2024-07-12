@@ -296,4 +296,155 @@ def patient_info_page():
     
     # 3. Inquiry (問 wèn)
     st.write("3. Inquiry (問 wèn)")
+    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(st.session_state.patient_info.get('cold_heat_sensation', 'Normal')))
+    sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
+    appetite = st.text_input("Appetite and Thirst", key="appetite", value=st.session_state.patient_info.get('appetite', ''))
+    sleep = st.text_input("Sleep Pattern", key="sleep", value=st.session_state.patient_info.get('sleep', ''))
+    bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=st.session_state.patient_info.get('bowel_movements', ''))
+    urination = st.text_input("Urination", key="urination", value=st.session_state.patient_info.get('urination', ''))
+    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=st.session_state.patient_info.get('pain', ''))
+    
+    # 4. Palpation (切 qiè)
+    st.write("4. Palpation (切 qiè)")
+    pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(st.session_state.patient_info.get('pulse_rate', 70)))
+    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], key="pulse_quality", default=st.session_state.patient_info.get('pulse_quality', []))
+    
+    # Additional TCM Diagnostic Information
+    st.subheader("Additional TCM Diagnostic Information")
+    emotions = st.text_area("Emotional State", key="emotions", value=st.session_state.patient_info.get('emotions', ''))
+    lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=st.session_state.patient_info.get('lifestyle', ''))
+    medical_history = st.text_area("Relevant Medical History", key="medical_history", value=st.session_state.patient_info.get('medical_history', ''))
+
+    # Update session state
+    st.session_state.patient_info.update({
+        'name': name,
+        'dob': dob_str,
+        'gender': gender,
+        'chief_complaint': chief_complaint,
+        'complaint_duration': complaint_duration,
+        'complexion': complexion,
+        'tongue_color': tongue_color,
+        'tongue_coating': tongue_coating,
+        'tongue_shape': tongue_shape,
+        'voice_sound': voice_sound,
+        'breath_odor': breath_odor,
+        'cold_heat_sensation': cold_heat_sensation,
+        'sweating': sweating,
+        'appetite': appetite,
+        'sleep': sleep,
+        'bowel_movements': bowel_movements,
+        'urination': urination,
+        'pain': pain,
+        'pulse_rate': pulse_rate,
+        'pulse_quality': pulse_quality,
+        'emotions': emotions,
+        'lifestyle': lifestyle,
+        'medical_history': medical_history
+    })
+
+    # Save patient information
+    if st.button("Save Patient Information"):
+        if name:
+            save_patient(st.session_state.patient_info)
+            st.success("Patient information saved successfully")
+        else:
+            st.error("Please enter patient name before saving")
+
+    # Generate Report button
+    if st.button("Generate TCM Diagnostic Report"):
+        if len(st.session_state.patient_info) > 10:  # Simple check for sufficient information
+            try:
+                # Create a copy of the patient info
+                serializable_patient_info = st.session_state.patient_info.copy()
+                serializable_patient_info['age'] = age  # Add calculated age to the report data
+                
+                user_input = json.dumps(serializable_patient_info, indent=2)
+                
+                # Query Qdrant for relevant context (if available)
+                context = ""
+                if qdrant_client is not None and embedding_model is not None:
+                    try:
+                        query_results = query_qdrant(user_input)
+                        context = "\n".join([match.payload.get('text', '') for match in query_results])
+                    except Exception as e:
+                        st.error(f"Error querying Qdrant: {str(e)}")
+                        st.warning("Proceeding with report generation without Qdrant context.")
+                else:
+                    st.warning("Qdrant or embedding model not initialized. Proceeding without context.")
+                
+                start_time = time.time()
+                report = generate_diagnostic_report(context, user_input)
+                end_time = time.time()
+                
+                if report:
+                    st.success(f"Report generated in {end_time - start_time:.2f} seconds")
+                    
+                    # Save the report to session state
+                    st.session_state.generated_report = report
+                    
+                    st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+                else:
+                    st.error("Failed to generate the report. Please try again.")
+            except Exception as e:
+                st.error(f"An error occurred during report generation: {str(e)}")
+        else:
+            st.warning("Please fill in more patient information before generating a report.")
+
+    # Clear form button
+    if st.button("Clear Form"):
+        st.session_state.patient_info = {}
+        st.session_state.search_success = None
+        st.session_state.found_patient_data = None
+        st.experimental_rerun()
+    
+    # Form fields
+    st.subheader("Basic Information")
+    name = st.text_input("Patient Name", key="name", value=st.session_state.patient_info.get('name', ''))
+    
+    # Date of Birth
+    dob = st.session_state.patient_info.get('dob', '')
+    dob_day, dob_month, dob_year = 1, 1, 1990
+    if dob:
+        try:
+            dob_day, dob_month, dob_year = map(int, dob.split('/'))
+        except:
+            st.error("Invalid date format in stored data. Using default values.")
+    
+    dob_col1, dob_col2, dob_col3 = st.columns(3)
+    with dob_col1:
+        dob_day = st.number_input("Day", key="dob_day", min_value=1, max_value=31, value=dob_day)
+    with dob_col2:
+        dob_month = st.number_input("Month", key="dob_month", min_value=1, max_value=12, value=dob_month)
+    with dob_col3:
+        dob_year = st.number_input("Year", key="dob_year", min_value=1900, max_value=datetime.date.today().year, value=dob_year)
+    
+    dob = datetime.date(dob_year, dob_month, dob_day)
+    dob_str = dob.strftime("%d/%m/%Y")
+    age = calculate_age(dob)
+    st.write(f"Patient Age: {age} years")
+    
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
+    
+    # Chief Complaint
+    st.subheader("Chief Complaint")
+    chief_complaint = st.text_area("Main Complaint", key="chief_complaint", value=st.session_state.patient_info.get('chief_complaint', ''))
+    complaint_duration = st.text_input("Duration of Complaint", key="complaint_duration", value=st.session_state.patient_info.get('complaint_duration', ''))
+    
+    # TCM Four Diagnostic Methods
+    st.subheader("TCM Four Diagnostic Methods")
+    
+    # 1. Inspection (望 wàng)
+    st.write("1. Inspection (望 wàng)")
+    complexion = st.text_input("Complexion", key="complexion", value=st.session_state.patient_info.get('complexion', ''))
+    tongue_color = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], key="tongue_color", index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(st.session_state.patient_info.get('tongue_color', 'Pale')))
+    tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], key="tongue_coating", index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(st.session_state.patient_info.get('tongue_coating', 'Thin White')))
+    tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=st.session_state.patient_info.get('tongue_shape', ''))
+    
+    # 2. Auscultation and Olfaction (聞 wén)
+    st.write("2. Auscultation and Olfaction (聞 wén)")
+    voice_sound = st.text_input("Voice Sound", key="voice_sound", value=st.session_state.patient_info.get('voice_sound', ''))
+    breath_odor = st.text_input("Breath Odor", key="breath_odor", value=st.session_state.patient_info.get('breath_odor', ''))
+    
+    # 3. Inquiry (問 wèn)
+    st.write("3. Inquiry (問 wèn)")
     cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(
