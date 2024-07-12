@@ -50,7 +50,7 @@ except Exception as e:
 def init_resources():
     try:
         st.write(f"Attempting to connect to Weaviate at URL: {WEAVIATE_URL}")
-        st.write(f"Using API key: {WEAVIATE_API_KEY[:5]}...{WEAVIATE_API_KEY[-5:]}")  # Show part of the API key for debugging
+        st.write(f"Using API key: {WEAVIATE_API_KEY[:5]}...{WEAVIATE_API_KEY[-5:]}")
         auth_config = weaviate.auth.AuthApiKey(api_key=WEAVIATE_API_KEY)
         weaviate_client = weaviate.Client(
             url=WEAVIATE_URL,
@@ -68,7 +68,11 @@ def init_resources():
                 st.write(f"Creating new class: {CLASS_NAME}")
                 class_obj = {
                     "class": CLASS_NAME,
-                    "vectorizer": "text2vec-transformers"
+                    "properties": [
+                        {"name": "text", "dataType": ["text"]},
+                        {"name": "file_name", "dataType": ["string"]},
+                        {"name": "chunk_index", "dataType": ["int"]}
+                    ]
                 }
                 weaviate_client.schema.create_class(class_obj)
             else:
@@ -83,6 +87,20 @@ def init_resources():
         except Exception as e:
             st.error(f"Unexpected error when interacting with Weaviate: {str(e)}")
             return None, None, None
+        
+        st.write("Initializing embedding model...")
+        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        st.write("Initializing Groq client...")
+        groq_client = groq.Client(api_key=GROQ_API_KEY)
+        st.write("Resources initialized successfully")
+        return weaviate_client, embedding_model, groq_client
+    except weaviate.exceptions.AuthenticationFailedException as e:
+        st.error(f"Authentication failed: {str(e)}")
+        st.error("Please check your Weaviate API key.")
+        return None, None, None
+    except Exception as e:
+        st.error(f"Error initializing resources: {str(e)}")
+        return None, None, None
         
         st.write("Initializing embedding model...")
         embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -182,6 +200,25 @@ def generate_diagnostic_report(context, user_input):
     document.add_heading(f"TCM Diagnostic Report for {patient_name}", 0)
     
     progress_bar = st.progress(0)
+    
+    # Query Weaviate for relevant context (if available)
+    context = ""
+    if weaviate_client is not None and embedding_model is not None:
+        try:
+            query_vector = embedding_model.encode(user_input).tolist()
+            result = (
+                weaviate_client.query
+                .get(CLASS_NAME, ["text"])
+                .with_near_vector({"vector": query_vector})
+                .with_limit(5)
+                .do()
+            )
+            context = "\n".join([item['text'] for item in result['data']['Get'][CLASS_NAME]])
+        except Exception as e:
+            st.error(f"Error querying Weaviate: {str(e)}")
+            st.warning("Proceeding with report generation without Weaviate context.")
+    else:
+        st.warning("Weaviate or embedding model not initialized. Proceeding without context.")
     
     for i, section in enumerate(report_sections):
         user_message = f"""
