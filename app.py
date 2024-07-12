@@ -296,10 +296,18 @@ def patient_info_page():
     
     # 3. Inquiry (問 wèn)
     st.write("3. Inquiry (問 wèn)")
-cold_heat_sensation = st.selectbox("Cold/Heat Sensation", 
-                                       ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], 
-                                       key="cold_heat_sensation", 
-                                       index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(st.session_state.patient_info.get('cold_heat_sensation', 'Normal')))    sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
+    cold_heat_sensation = st.selectbox(
+        "Cold/Heat Sensation",
+        ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"],
+        key="colcold_heat_sensation = st.selectbox(
+        "Cold/Heat Sensation",
+        ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"],
+        key="cold_heat_sensation",
+        index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(
+            st.session_state.patient_info.get('cold_heat_sensation', 'Normal')
+        )
+    )
+    sweating = st.text_input("Sweating", key="sweating", value=st.session_state.patient_info.get('sweating', ''))
     appetite = st.text_input("Appetite and Thirst", key="appetite", value=st.session_state.patient_info.get('appetite', ''))
     sleep = st.text_input("Sleep Pattern", key="sleep", value=st.session_state.patient_info.get('sleep', ''))
     bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=st.session_state.patient_info.get('bowel_movements', ''))
@@ -398,55 +406,46 @@ cold_heat_sensation = st.selectbox("Cold/Heat Sensation",
         st.session_state.search_success = None
         st.session_state.found_patient_data = None
         st.experimental_rerun()
-    
-    # Form fields
-    st.subheader("Basic Information")
-    name = st.text_input("Patient Name", key="name", value=st.session_state.patient_info.get('name', ''))
-    
-    # Date of Birth
-    dob = st.session_state.patient_info.get('dob', '')
-    dob_day, dob_month, dob_year = 1, 1, 1990
-    if dob:
-        try:
-            dob_day, dob_month, dob_year = map(int, dob.split('/'))
-        except:
-            st.error("Invalid date format in stored data. Using default values.")
-    
-    dob_col1, dob_col2, dob_col3 = st.columns(3)
-    with dob_col1:
-        dob_day = st.number_input("Day", key="dob_day", min_value=1, max_value=31, value=dob_day)
-    with dob_col2:
-        dob_month = st.number_input("Month", key="dob_month", min_value=1, max_value=12, value=dob_month)
-    with dob_col3:
-        dob_year = st.number_input("Year", key="dob_year", min_value=1900, max_value=datetime.date.today().year, value=dob_year)
-    
-    dob = datetime.date(dob_year, dob_month, dob_day)
-    dob_str = dob.strftime("%d/%m/%Y")
-    age = calculate_age(dob)
-    st.write(f"Patient Age: {age} years")
-    
-    gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(st.session_state.patient_info.get('gender', 'Male')))
-    
-    # Chief Complaint
-    st.subheader("Chief Complaint")
-    chief_complaint = st.text_area("Main Complaint", key="chief_complaint", value=st.session_state.patient_info.get('chief_complaint', ''))
-    complaint_duration = st.text_input("Duration of Complaint", key="complaint_duration", value=st.session_state.patient_info.get('complaint_duration', ''))
-    
-    # TCM Four Diagnostic Methods
-    st.subheader("TCM Four Diagnostic Methods")
-    
-    # 1. Inspection (望 wàng)
-    st.write("1. Inspection (望 wàng)")
-    complexion = st.text_input("Complexion", key="complexion", value=st.session_state.patient_info.get('complexion', ''))
-    tongue_color = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], key="tongue_color", index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(st.session_state.patient_info.get('tongue_color', 'Pale')))
-    tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], key="tongue_coating", index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(st.session_state.patient_info.get('tongue_coating', 'Thin White')))
-    tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=st.session_state.patient_info.get('tongue_shape', ''))
-    
-    # 2. Auscultation and Olfaction (聞 wén)
-    st.write("2. Auscultation and Olfaction (聞 wén)")
-    voice_sound = st.text_input("Voice Sound", key="voice_sound", value=st.session_state.patient_info.get('voice_sound', ''))
-    breath_odor = st.text_input("Breath Odor", key="breath_odor", value=st.session_state.patient_info.get('breath_odor', ''))
-    
-    # 3. Inquiry (問 wèn)
-    st.write("3. Inquiry (問 wèn)")
-    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(
+
+def view_report_page():
+    st.title("View TCM Diagnostic Report")
+    if 'generated_report' in st.session_state and st.session_state.generated_report:
+        # Display the report content
+        doc = st.session_state.generated_report
+        for paragraph in doc.paragraphs:
+            st.write(paragraph.text)
+        
+        # Add a download button for the report
+        buffer = BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        
+        st.download_button(
+            label="Download Report as Word Document",
+            data=buffer,
+            file_name="tcm_diagnostic_report.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    else:
+        st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
+
+def main():
+    st.title("Welcome to AccuAssist")
+    st.write("This application helps generate comprehensive Traditional Chinese Medicine diagnostic reports based on patient information and symptoms.")
+
+    # Navigation
+    st.write("## Navigation")
+    page = st.radio("Go to", ["Patient Information", "View Report"])
+
+    # Clear Patient Data button
+    if st.button("Clear Patient Data"):
+        clear_patient_data()
+
+    # Display the selected page
+    if page == "Patient Information":
+        patient_info_page()
+    elif page == "View Report":
+        view_report_page()
+
+if __name__ == "__main__":
+    main()
