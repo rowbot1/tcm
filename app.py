@@ -48,28 +48,39 @@ except Exception as e:
     st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
     sheet = None
 
-# Initialize resources
 @st.cache_resource
 def init_resources():
     try:
-        qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+        st.write(f"Attempting to connect to Qdrant at URL: {QDRANT_URL}")
+        qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=10)
         
         # Check if collection exists, if not create it
         try:
+            st.write("Attempting to get collections...")
             collections = qdrant_client.get_collections()
+            st.write(f"Collections retrieved: {collections}")
             if not any(collection.name == COLLECTION_NAME for collection in collections.collections):
+                st.write(f"Creating new collection: {COLLECTION_NAME}")
                 qdrant_client.create_collection(
                     collection_name=COLLECTION_NAME,
                     vectors_config=rest.VectorParams(size=384, distance=rest.Distance.COSINE),
                 )
+            else:
+                st.write(f"Collection {COLLECTION_NAME} already exists")
         except UnexpectedResponse as e:
             st.error(f"Error connecting to Qdrant: {str(e)}")
             st.error(f"Response status: {e.status_code}")
             st.error(f"Response content: {e.content}")
             return None, None, None
+        except Exception as e:
+            st.error(f"Unexpected error when interacting with Qdrant: {str(e)}")
+            return None, None, None
         
+        st.write("Initializing embedding model...")
         embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        st.write("Initializing Groq client...")
         groq_client = groq.Client(api_key=GROQ_API_KEY)
+        st.write("Resources initialized successfully")
         return qdrant_client, embedding_model, groq_client
     except Exception as e:
         st.error(f"Error initializing resources: {str(e)}")
@@ -450,5 +461,18 @@ def main():
     elif page == "View Report":
         view_report_page()
 
+def test_qdrant_connection():
+    st.write("Testing Qdrant connection...")
+    try:
+        client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=10)
+        health = client.health()
+        st.write(f"Qdrant health check result: {health}")
+        collections = client.get_collections()
+        st.write(f"Qdrant collections: {collections}")
+        st.success("Qdrant connection test successful!")
+    except Exception as e:
+        st.error(f"Qdrant connection test failed: {str(e)}")
+
 if __name__ == "__main__":
     main()
+    test_qdrant_connection()
