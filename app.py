@@ -46,11 +46,11 @@ except Exception as e:
     st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
     sheet = None
 
-# Initialize resources
 @st.cache_resource
 def init_resources():
     try:
         st.write(f"Attempting to connect to Weaviate at URL: {WEAVIATE_URL}")
+        st.write(f"Using API key: {WEAVIATE_API_KEY[:5]}...{WEAVIATE_API_KEY[-5:]}")  # Show part of the API key for debugging
         auth_config = weaviate.auth.AuthApiKey(api_key=WEAVIATE_API_KEY)
         weaviate_client = weaviate.Client(
             url=WEAVIATE_URL,
@@ -75,8 +75,13 @@ def init_resources():
                 st.write(f"Class {CLASS_NAME} already exists")
             
             st.success("Weaviate connection and setup successful!")
-        except Exception as e:
+        except weaviate.exceptions.UnexpectedStatusCodeException as e:
             st.error(f"Error interacting with Weaviate: {str(e)}")
+            st.error(f"Status code: {e.status_code}")
+            st.error(f"Error message: {e.message}")
+            return None, None, None
+        except Exception as e:
+            st.error(f"Unexpected error when interacting with Weaviate: {str(e)}")
             return None, None, None
         
         st.write("Initializing embedding model...")
@@ -85,6 +90,10 @@ def init_resources():
         groq_client = groq.Client(api_key=GROQ_API_KEY)
         st.write("Resources initialized successfully")
         return weaviate_client, embedding_model, groq_client
+    except weaviate.exceptions.AuthenticationFailedException as e:
+        st.error(f"Authentication failed: {str(e)}")
+        st.error("Please check your Weaviate API key.")
+        return None, None, None
     except Exception as e:
         st.error(f"Error initializing resources: {str(e)}")
         return None, None, None
