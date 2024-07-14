@@ -99,18 +99,75 @@ def save_or_update_patient(sheets_service, patient_data):
 st.markdown(
     """
   <style>
-    .element-container:has(style){
-        display: none;
-    }
-    #button-after {
-        display: none;
-    }
-    .element-container:has(#button-after) {
-        display: none;
-    }
-    .element-container:has(#button-after) + div button {
-        background-color: orange;
-        }
+  /* Custom CSS for Streamlit App */
+
+/* Main page background */
+.stApp {
+    background-color: #f0f2f6;
+}
+
+/* Sidebar */
+.css-1d391kg {
+    background-color: #e6e9ef;
+}
+
+/* Headers */
+h1, h2, h3 {
+    color: #1f618d;
+}
+
+/* Text color */
+body {
+    color: #2c3e50;
+}
+
+/* Buttons */
+.stButton>button {
+    color: #ffffff;
+    background-color: #3498db;
+    border: none;
+}
+
+.stButton>button:hover {
+    background-color: #2980b9;
+}
+
+/* Input widgets */
+.stTextInput>div>div>input, .stSelectbox>div>div>select {
+    background-color: #ffffff;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+}
+
+/* Slider */
+.stSlider>div>div>div>div {
+    background-color: #3498db;
+}
+
+/* Expander */
+.streamlit-expanderHeader {
+    background-color: #d5dbdb;
+    color: #2c3e50;
+}
+
+/* DataFrames */
+.dataframe {
+    border-collapse: collapse;
+}
+
+.dataframe th {
+    background-color: #3498db;
+    color: white;
+}
+
+.dataframe td {
+    background-color: #ecf0f1;
+}
+
+/* Plot background */
+.stPlot {
+    background-color: #ffffff;
+}
     </style>
 
 
