@@ -373,10 +373,17 @@ def patient_info_page():
             urination = st.text_input("Urination", key="urination", value=patient_data.get('Urination', ''))
         pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=patient_data.get('Pain (location, nature, factors that alleviate or aggravate)', ''))
 
-        st.subheader("4. Palpation (切 qiè)")
+        sst.subheader("4. Palpation (切 qiè)")
         col1, col2 = st.columns(2)
         with col1:
-            pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(patient_data.get('Pulse Rate (BPM)', 70)))
+            stored_pulse_rate = patient_data.get('Pulse Rate (BPM)', '70')
+            try:
+                default_pulse_rate = int(float(stored_pulse_rate))
+                default_pulse_rate = max(40, min(200, default_pulse_rate))  # Ensure it's within the allowed range
+            except ValueError:
+                default_pulse_rate = 70  # Default to 70 if conversion fails
+            
+            pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=default_pulse_rate)
         with col2:
             pulse_quality_options = ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"]
             stored_pulse_quality = patient_data.get('Pulse Quality', '')
