@@ -160,7 +160,30 @@ def save_report_to_docs(docs_service, drive_service, patient_name, report_conten
                 }
             }
         ]
-        docs_service.documents().batchUpdate(documentId=doc_id, body={'requests': requests}).execute()
+
+        # Debug: Print the size of the content
+        st.write(f"Debug: Report content size: {len(report_content)} characters")
+
+        # Try to update the document content
+        try:
+            docs_service.documents().batchUpdate(documentId=doc_id, body={'requests': requests}).execute()
+        except Exception as update_error:
+            st.error(f"Error updating document content: {update_error}")
+            # If update fails, try to insert content in smaller chunks
+            chunk_size = 1000000  # Google Docs has a limit of about 1MB per request
+            for i in range(0, len(report_content), chunk_size):
+                chunk = report_content[i:i+chunk_size]
+                chunk_request = [
+                    {
+                        'insertText': {
+                            'location': {
+                                'index': i + 1,
+                            },
+                            'text': chunk
+                        }
+                    }
+                ]
+                docs_service.documents().batchUpdate(documentId=doc_id, body={'requests': chunk_request}).execute()
 
         # Set permissions to anyone with the link can view
         drive_service.permissions().create(
@@ -171,7 +194,9 @@ def save_report_to_docs(docs_service, drive_service, patient_name, report_conten
 
         return doc_id, doc_link
     except Exception as e:
-        st.error(f"Error saving report to Google Docs: {e}")
+        st.error(f"Error saving report to Google Docs: {str(e)}")
+        if hasattr(e, 'content'):
+            st.error(f"Error details: {e.content}")
         return None, None
 
 # Function to get report content from Google Docs
