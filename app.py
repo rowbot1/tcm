@@ -135,6 +135,7 @@ h1 {
 .stTextInput>div>div>input:focus {
     border-color: #1e4db7;
     outline: none;
+
 }
 
 .stDataFrame {
