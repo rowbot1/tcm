@@ -28,11 +28,9 @@ INDEX_NAME = "tcmapp"
 GOOGLE_SHEETS_CREDENTIALS = st.secrets["gcp_service_account"]
 SHEET_ID = st.secrets["google_sheets"]["sheet_id"]
 
-# Initialize Weaviate client and print schema for debugging
+# Initialize Weaviate client
 auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
-client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
-schema = client.schema.get()
-st.write("Weaviate Schema:", schema)  # This will print the schema in Streamlit app for debugging
+weaviate_client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
 
 # --- UTILITY FUNCTIONS ---
 
@@ -87,8 +85,7 @@ def save_or_update_patient(sheets_service, patient_data):
             body={"values": [list(patient_data.values())]},  # Convert to list of values
         ).execute()
 
-# Initialize Weaviate and Groq clients (outside main function to avoid re-initialization)
-weaviate_client = client
+# Initialize resources
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 groq_client = groq.Client(api_key=GROQ_API_KEY)
 sheets_service = initialize_sheets_service()  # Initialize Google Sheets API
@@ -110,8 +107,6 @@ def query_weaviate(query_text, top_k=5):
     query_vector = embedding_model.encode(query_text).tolist()
     near_vector = {"vector": query_vector}
     results = weaviate_client.query.get("TCMApp", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
-    
-    st.write("Weaviate response:", results)  # Add this line to debug the response structure
     
     if 'data' in results and 'Get' in results['data'] and 'TCMApp' in results['data']['Get']:
         return results['data']['Get']['TCMApp']
