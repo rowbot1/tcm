@@ -98,35 +98,58 @@ def save_or_update_patient(sheets_service, patient_data):
 
 st.markdown(
     """
-    <style>
-    .stApp {
-        max-width: 1200px; /* Adjust width as needed */
-        margin: 0 auto;  /* Center the content */
-        background-color: #f4f4f4; /* Light background for the app */
-        padding: 20px;
-        border-radius: 10px; /* Optional rounded corners */
-    }
+<style>
+.stApp {
+    max-width: 1200px; 
+    margin: 0 auto;  
+    background-color: white;  /* Cleaner white background */
+    padding: 30px;         /* More breathing room */
+    border-radius: 8px;     /* Slightly rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    font-family: "Helvetica Neue", sans-serif; /* Modern font choice */
+}
 
-    .stTextInput, .stTextArea, .stSelectbox {
-        width: 100%;  /* Make input fields full width */
-        border: 1px solid #ccc; /* Add a subtle border */
-        padding: 10px; /* Add some padding */
-    }
+.stTextInput, .stTextArea, .stSelectbox {
+    width: 100%;  
+    border: 1px solid #e0e0e0; /* Lighter border for a cleaner look */
+    padding: 12px;           /* Increased padding */
+    border-radius: 4px;
+    margin-bottom: 15px; /* Add spacing between elements */
+}
 
-    .stButton {
-        background-color: #007bff; /* Primary blue color */
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 5px; /* Slightly rounded corners */
-    }
+.stButton {
+    background-color: #0056b3; /* Deeper blue for more professional feel */
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Smooth transition on hover */
+}
 
-    .stSubheader {
-        color: #333; /* Darker color for subheaders */
-        margin-top: 30px;
-        border-bottom: 1px solid #ddd;
-    }
-    </style>
+.stButton:hover {
+    background-color: #003d80; /* Darker shade on hover */
+}
+
+.stSubheader {
+    color: #212529; /* Darker gray for better contrast */
+    font-size: 22px;   /* Larger font size for subheaders */
+    margin-top: 40px;
+    border-bottom: none; /* Remove the line */
+    margin-bottom: 20px;  /* Add some bottom margin */
+}
+
+.stProgress > div > div > div { /* style the progress bar */
+    background-color: #4CAF50 !important;
+}
+
+/* Add some style to the title */
+.stTitle {
+    color: #212529;
+    margin-bottom: 30px;
+}
+</style>
+
     """,
     unsafe_allow_html=True,
 )
