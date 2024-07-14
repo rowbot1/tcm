@@ -384,6 +384,7 @@ def patient_info_page():
                 default_pulse_rate = 70  # Default to 70 if conversion fails
             
             pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=default_pulse_rate)
+        
         with col2:
             pulse_quality_options = ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"]
             stored_pulse_quality = patient_data.get('Pulse Quality', '')
