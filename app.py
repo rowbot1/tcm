@@ -339,15 +339,16 @@ def patient_info_page():
             complexion = st.text_input("Complexion", key="complexion", value=patient_data.get('Complexion', ''))
         with col2:
             tongue_color_options = ["Not observed", "Pale", "Red", "Dark Red", "Purple", "Bluish Purple"]
-            tongue_color = st.selectbox("Tongue Color", tongue_color_options, key="tongue_color", index=tongue_color_options.index(patient_data.get('Tongue Color', 'Not observed')))
+            stored_tongue_color = patient_data.get('Tongue Color', 'Not observed')
+            tongue_color_index = tongue_color_options.index(stored_tongue_color) if stored_tongue_color in tongue_color_options else 0
+            tongue_color = st.selectbox("Tongue Color", tongue_color_options, key="tongue_color", index=tongue_color_index)
         with col3:
-            tongue_coating = st.selectbox(
-                "Tongue Coating",
-                ["Not observed", "Thin White", "Thick White", "Yellow", "Grey", "Black"],
-                key="tongue_coating",
-                index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('Tongue Coating', 'Thin White')) if patient_data.get('Tongue Coating', 'Thin White') in ["Thin White", "Thick White", "Yellow", "Grey", "Black"] else 0
-            )
+            tongue_coating_options = ["Not observed", "Thin White", "Thick White", "Yellow", "Grey", "Black"]
+            stored_tongue_coating = patient_data.get('Tongue Coating', 'Not observed')
+            tongue_coating_index = tongue_coating_options.index(stored_tongue_coating) if stored_tongue_coating in tongue_coating_options else 0
+            tongue_coating = st.selectbox("Tongue Coating", tongue_coating_options, key="tongue_coating", index=tongue_coating_index)
         tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=patient_data.get('Tongue Shape and Features', ''))
+
 
         st.subheader("2. Auscultation and Olfaction (聞 wén)")
         col1, col2 = st.columns(2)
