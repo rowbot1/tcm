@@ -432,7 +432,7 @@ def main():
             st.experimental_rerun()  # Refresh the page after clearing
 
     if page == "Patient Information":
-        st.title("AcuAssist: Patient Information")
+        st.title("AcuAssist: Your AI-Powered TCM Diagnostic Assistant. Patient Information")
         patient_info_page()
     elif page == "View Report":
         st.title("AcuAssist: TCM Diagnostic Report")
