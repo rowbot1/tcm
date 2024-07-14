@@ -318,12 +318,10 @@ def patient_info_page():
 
     pulse_quality = st.multiselect("Pulse Quality", pulse_quality_options, key="pulse_quality", default=default_pulse_quality)
 
-    st.subheader("Additional TCM Diagnostic Information")
+        st.subheader("Additional TCM Diagnostic Information")
     emotions = st.text_area("Emotional State", key="emotions", value=patient_data.get('Emotional State', ''))
     lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('Lifestyle Factors (diet, exercise, stress, etc.)', ''))
-    medical_history
-    
-    st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('Relevant Medical History', ''))
+    medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('Relevant Medical History', ''))
 
     # Update session state with current form values
     st.session_state.patient_info.update({
@@ -347,7 +345,7 @@ def patient_info_page():
         'Urination': urination,
         'Pain (location, nature, factors that alleviate or aggravate)': pain,
         'Pulse Rate (BPM)': str(pulse_rate),
-        'Pulse Quality': ', '.join(pulse_quality),
+        'Pulse Quality': ', '.join(pulse_quality),  # Comma-separated string for multiselect
         'Emotional State': emotions,
         'Lifestyle Factors (diet, exercise, stress, etc.)': lifestyle,
         'Relevant Medical History': medical_history
@@ -425,5 +423,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
