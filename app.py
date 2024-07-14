@@ -98,35 +98,20 @@ def save_or_update_patient(sheets_service, patient_data):
 
 st.markdown(
     """
-<style>
-body {
-  background-color: #f9f9f9; /* light gray */
-  color: #333; /* dark gray */
-}
-
-.stTextInput, .stTextArea, .stSelectbox {
-  background-color: #fff; /* white */
-  border-color: #ddd; /* light gray */
-}
-
-.stButton {
-  background-color: #4CAF50; /* green */
-  color: #fff; /* white */
-}
-
-.stButton:hover {
-  background-color: #3e8e41; /* darker green */
-}
-
-.stButton.secondary {
-  background-color: #666; /* dark gray */
-  color: #fff; /* white */
-}
-
-.stButton.secondary:hover {
-  background-color: #555; /* darker dark gray */
-}
-</style>
+  <style>
+    .element-container:has(style){
+        display: none;
+    }
+    #button-after {
+        display: none;
+    }
+    .element-container:has(#button-after) {
+        display: none;
+    }
+    .element-container:has(#button-after) + div button {
+        background-color: orange;
+        }
+    </style>
 
 
 
