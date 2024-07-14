@@ -28,11 +28,6 @@ INDEX_NAME = "tcmapp"
 GOOGLE_SHEETS_CREDENTIALS = st.secrets["gcp_service_account"]
 SHEET_ID = st.secrets["google_sheets"]["sheet_id"]
 
-# Initialize Weaviate client and print schema for debugging
-auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
-client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
-schema = client.schema.get()
-st.write("Weaviate Schema:", schema)  # This will print the schema in Streamlit app for debugging
 
 # --- UTILITY FUNCTIONS ---
 
