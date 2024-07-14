@@ -92,6 +92,19 @@ def save_or_update_patient(sheets_service, patient_data):
     except Exception as e:
         st.error(f"Error saving/updating patient data: {e}")
 
+# New function to get all patients
+def get_all_patients(sheets_service):
+    try:
+        result = sheets_service.spreadsheets().values().get(
+            spreadsheetId=SHEET_ID,
+            range="A2:A"  # Assuming patient names are in column A, starting from row 2
+        ).execute()
+        values = result.get('values', [])
+        return [name[0] for name in values if name]  # Flatten the list and remove empty entries
+    except Exception as e:
+        st.error(f"Error fetching patient list: {e}")
+        return []
+
 # --- STYLING ---
 
 st.markdown(
@@ -252,8 +265,24 @@ if "generated_report" not in st.session_state:
 def patient_info_page():
     st.title("AcuAssist: Your AI-Powered TCM Diagnostic Assistant")
 
+    # Patient Selection Dropdown
+    all_patients = get_all_patients(sheets_service)
+    selected_patient = st.selectbox("Select Patient", ["New Patient"] + all_patients)
+
+    if selected_patient != "New Patient":
+        # Load the selected patient's data
+        patient_data = search_patient(sheets_service, selected_patient)
+        if patient_data:
+            st.session_state.patient_info = patient_data
+            st.success(f"Loaded data for patient: {selected_patient}")
+        else:
+            st.error(f"Failed to load data for patient: {selected_patient}")
+    else:
+        # Clear the form for a new patient
+        clear_patient_data()
+
     # Patient Search
-    with st.expander("Patient Search", expanded=True):
+    with st.expander("Patient Search", expanded=False):
         search_col1, search_col2 = st.columns([3, 1])
         with search_col1:
             search_name = st.text_input("Search Patient by Name")
