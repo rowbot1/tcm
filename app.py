@@ -13,6 +13,17 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 from googleapiclient.discovery import build
 
+
+import weaviate
+from weaviate.auth import AuthApiKey
+
+# Initialize Weaviate client
+auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
+client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
+
+# Get schema
+schema = client.schema.get()
+print(schema)
 # --- CONFIGURATION ---
 
 # Load sensitive data from secrets
