@@ -281,7 +281,10 @@ def patient_info_page():
 
     st.write("4. Palpation (切 qiè)")
     pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(patient_data.get('Pulse Rate (BPM)', 70)))
-    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], key="pulse_quality", default=[patient_data.get('Pulse Quality', '')])
+    
+    pulse_quality_options = ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"]
+    default_pulse_quality = patient_data.get('Pulse Quality', '').split(', ') if patient_data.get('Pulse Quality') else []
+    pulse_quality = st.multiselect("Pulse Quality", pulse_quality_options, key="pulse_quality", default=default_pulse_quality)
 
     st.subheader("Additional TCM Diagnostic Information")
     emotions = st.text_area("Emotional State", key="emotions", value=patient_data.get('Emotional State', ''))
@@ -312,7 +315,7 @@ def patient_info_page():
         'Urination': urination,
         'Pain (location, nature, factors that alleviate or aggravate)': pain,
         'Pulse Rate (BPM)': pulse_rate,
-        'Pulse Quality': pulse_quality[0] if pulse_quality else '',
+        'Pulse Quality': ', '.join(pulse_quality),
         'Emotional State': emotions,
         'Lifestyle Factors (diet, exercise, stress, etc.)': lifestyle,
         'Relevant Medical History': medical_history
