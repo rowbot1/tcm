@@ -157,10 +157,10 @@ def query_weaviate(query_text, top_k=5):
         raise ValueError("Weaviate client is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
     near_vector = {"vector": query_vector}
-    results = weaviate_client.query.get(INDEX_NAME, ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
+    results = weaviate_client.query.get("TCMApp", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
 
-    if 'data' in results and 'Get' in results['data'] and INDEX_NAME in results['data']['Get']:
-        return results['data']['Get'][INDEX_NAME]
+    if 'data' in results and 'Get' in results['data'] and 'TCMApp' in results['data']['Get']:
+        return results['data']['Get']['TCMApp']
     else:
         st.error(f"Unexpected response format: {results}")
         return []
