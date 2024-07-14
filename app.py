@@ -15,11 +15,10 @@ import pandas as pd
 # Set up Streamlit
 st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
 
-# Custom CSS to hide the sidebar and style buttons
-hide_sidebar_style = """
+# Custom CSS to style buttons
+button_style = """
     <style>
-        div[data-testid="stSidebar"] {display: none;}
-        .nav-menu button {
+        .stButton button {
             background-color: #4CAF50;
             color: white;
             padding: 14px 20px;
@@ -28,12 +27,12 @@ hide_sidebar_style = """
             cursor: pointer;
             width: 100%;
         }
-        .nav-menu button:hover {
+        .stButton button:hover {
             background-color: #45a049;
         }
     </style>
 """
-st.markdown(hide_sidebar_style, unsafe_allow_html=True)
+st.markdown(button_style, unsafe_allow_html=True)
 
 # Load API keys from Streamlit secrets
 WEAVIATE_URL = st.secrets["api_keys"]["WEAVIATE_URL"]
@@ -90,7 +89,8 @@ def query_weaviate(query_text, top_k=5):
     if client is None:
         raise ValueError("Weaviate client is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
-    results = client.query.get("Document", ["text"]).with_near_vector(query_vector).with_limit(top_k).do()
+    near_vector = {"vector": query_vector}
+    results = client.query.get("Document", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
     return results['data']['Get']['Document']
 
 def generate_diagnostic_report_part(system_message, user_message):
@@ -306,66 +306,59 @@ def main():
     st.title("Welcome to AcuAssist")
     st.write("This application helps generate comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on patient information and symptoms.")
 
-    # Fancy Navigation Menu
-    with st.sidebar:
-        st.markdown("<div class='nav-menu'>", unsafe_allow_html=True)
-        page = st.radio("Navigation", ["Patient Information", "View Report"])
-        if st.button("Clear Patient Data"):
-            clear_patient_data()
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Top Navigation Buttons
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        page = st.selectbox("Go to", ["Patient Information", "View Report"])
+    with col2:
+        if st.button("Save Patient Information"):
+            if 'name' in st.session_state.patient_info and st.session_state.patient_info['name']:
+                save_patient(st.session_state.patient_info)
+                st.success("Patient information saved successfully")
+            else:
+                st.error("Please enter patient name before saving")
+    with col3:
+        if st.button("Generate TCM Diagnostic Report"):
+            if len(st.session_state.patient_info) > 10:
+                try:
+                    serializable_patient_info = st.session_state.patient_info.copy()
+                    serializable_patient_info['age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['dob'], "%d/%m/%Y"))
 
-    # Top Buttons
-    if page == "Patient Information":
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("Save Patient Information"):
-                if 'name' in st.session_state.patient_info and st.session_state.patient_info['name']:
-                    save_patient(st.session_state.patient_info)
-                    st.success("Patient information saved successfully")
-                else:
-                    st.error("Please enter patient name before saving")
-        with col2:
-            if st.button("Generate TCM Diagnostic Report"):
-                if len(st.session_state.patient_info) > 10:
-                    try:
-                        serializable_patient_info = st.session_state.patient_info.copy()
-                        serializable_patient_info['age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['dob'], "%d/%m/%Y"))
+                    user_input = json.dumps(serializable_patient_info, indent=2)
 
-                        user_input = json.dumps(serializable_patient_info, indent=2)
+                    context = ""
+                    if client is not None and embedding_model is not None:
+                        try:
+                            query_results = query_weaviate(user_input)
+                            context = "\n".join([result['text'] for result in query_results])
+                        except Exception as e:
+                            st.error(f"Error querying Weaviate: {str(e)}")
+                            st.warning("Proceeding with report generation without Weaviate context.")
+                    else:
+                        st.warning("Weaviate client or embedding model not initialized. Proceeding without context.")
 
-                        context = ""
-                        if client is not None and embedding_model is not None:
-                            try:
-                                query_results = query_weaviate(user_input)
-                                context = "\n".join([result['text'] for result in query_results])
-                            except Exception as e:
-                                st.error(f"Error querying Weaviate: {str(e)}")
-                                st.warning("Proceeding with report generation without Weaviate context.")
-                        else:
-                            st.warning("Weaviate client or embedding model not initialized. Proceeding without context.")
+                    start_time = time.time()
+                    report = generate_diagnostic_report(context, user_input)
+                    end_time = time.time()
 
-                        start_time = time.time()
-                        report = generate_diagnostic_report(context, user_input)
-                        end_time = time.time()
+                    if report:
+                        st.success(f"Report generated in {end_time - start_time:.2f} seconds")
 
-                        if report:
-                            st.success(f"Report generated in {end_time - start_time:.2f} seconds")
+                        st.session_state.generated_report = report
 
-                            st.session_state.generated_report = report
-
-                            st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
-                        else:
-                            st.error("Failed to generate the report. Please try again.")
-                    except Exception as e:
-                        st.error(f"An error occurred during report generation: {str(e)}")
-                else:
-                    st.warning("Please fill in more patient information before generating a report.")
-        with col3:
-            if st.button("Clear Form"):
-                st.session_state.patient_info = {}
-                st.session_state.search_success = None
-                st.session_state.found_patient_data = None
-                st.experimental_rerun()
+                        st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+                    else:
+                        st.error("Failed to generate the report. Please try again.")
+                except Exception as e:
+                    st.error(f"An error occurred during report generation: {str(e)}")
+            else:
+                st.warning("Please fill in more patient information before generating a report.")
+    with col4:
+        if st.button("Clear Form"):
+            st.session_state.patient_info = {}
+            st.session_state.search_success = None
+            st.session_state.found_patient_data = None
+            st.experimental_rerun()
 
     # Display the selected page
     if page == "Patient Information":
