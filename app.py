@@ -209,6 +209,7 @@ def patient_info_page():
             st.session_state.found_patient_data = found_patient
             st.session_state.search_success = True
             st.session_state.patient_info = found_patient
+            st.experimental_rerun()
         else:
             st.warning(f"No patient found with name '{search_name}'")
             st.session_state.search_success = False
@@ -220,10 +221,10 @@ def patient_info_page():
     patient_data = st.session_state.get('patient_info', {})
     st.write("Debug: Current patient_data:", patient_data)
 
-    name = st.text_input("Patient Name", key="name", value=patient_data.get('name', ''))
+    name = st.text_input("Patient Name", key="name", value=patient_data.get('Patient Name', ''))
     st.write(f"Debug: Name value: {name}")
     
-    dob = patient_data.get('dob', '')
+    dob = patient_data.get('Date of Birth (DD/MM/YYYY)', '')
     st.write(f"Debug: DOB value from patient_data: {dob}")
     dob_day, dob_month, dob_year = 1, 1, 1990
     if dob:
@@ -250,71 +251,71 @@ def patient_info_page():
         dob_str = ""
         age = None
 
-    gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(patient_data.get('gender', 'Male')))
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(patient_data.get('Gender', 'Male')))
     st.write(f"Debug: Gender value: {gender}")
 
     st.subheader("Chief Complaint")
-    chief_complaint = st.text_area("Main Complaint", key="chief_complaint", value=patient_data.get('chief_complaint', ''))
-    complaint_duration = st.text_input("Duration of Complaint", key="complaint_duration", value=patient_data.get('complaint_duration', ''))
+    chief_complaint = st.text_area("Main Complaint", key="chief_complaint", value=patient_data.get('Chief Complaint', ''))
+    complaint_duration = st.text_input("Duration of Complaint", key="complaint_duration", value=patient_data.get('Duration of Complaint', ''))
 
     st.subheader("TCM Four Diagnostic Methods")
 
     st.write("1. Inspection (望 wàng)")
-    complexion = st.text_input("Complexion", key="complexion", value=patient_data.get('complexion', ''))
-    tongue_color = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], key="tongue_color", index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(patient_data.get('tongue_color', 'Pale')))
-    tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], key="tongue_coating", index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('tongue_coating', 'Thin White')))
-    tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=patient_data.get('tongue_shape', ''))
+    complexion = st.text_input("Complexion", key="complexion", value=patient_data.get('Complexion', ''))
+    tongue_color = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], key="tongue_color", index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(patient_data.get('Tongue Color', 'Pale')))
+    tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], key="tongue_coating", index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('Tongue Coating', 'Thin White')))
+    tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=patient_data.get('Tongue Shape and Features', ''))
 
     st.write("2. Auscultation and Olfaction (聞 wén)")
-    voice_sound = st.text_input("Voice Sound", key="voice_sound", value=patient_data.get('voice_sound', ''))
-    breath_odor = st.text_input("Breath Odor", key="breath_odor", value=patient_data.get('breath_odor', ''))
+    voice_sound = st.text_input("Voice Sound", key="voice_sound", value=patient_data.get('Voice Sound', ''))
+    breath_odor = st.text_input("Breath Odor", key="breath_odor", value=patient_data.get('Breath Odor', ''))
 
     st.write("3. Inquiry (問 wèn)")
-    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(patient_data.get('cold_heat_sensation', 'Normal')))
-    sweating = st.text_input("Sweating", key="sweating", value=patient_data.get('sweating', ''))
-    appetite = st.text_input("Appetite and Thirst", key="appetite", value=patient_data.get('appetite', ''))
-    sleep = st.text_input("Sleep Pattern", key="sleep", value=patient_data.get('sleep', ''))
-    bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=patient_data.get('bowel_movements', ''))
-    urination = st.text_input("Urination", key="urination", value=patient_data.get('urination', ''))
-    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=patient_data.get('pain', ''))
+    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(patient_data.get('Cold/Heat Sensation', 'Normal')))
+    sweating = st.text_input("Sweating", key="sweating", value=patient_data.get('Sweating', ''))
+    appetite = st.text_input("Appetite and Thirst", key="appetite", value=patient_data.get('Appetite and Thirst', ''))
+    sleep = st.text_input("Sleep Pattern", key="sleep", value=patient_data.get('Sleep Pattern', ''))
+    bowel_movements = st.text_input("Bowel Movements", key="bowel_movements", value=patient_data.get('Bowel Movements', ''))
+    urination = st.text_input("Urination", key="urination", value=patient_data.get('Urination', ''))
+    pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=patient_data.get('Pain (location, nature, factors that alleviate or aggravate)', ''))
 
     st.write("4. Palpation (切 qiè)")
-    pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(patient_data.get('pulse_rate', 70)))
-    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], key="pulse_quality", default=patient_data.get('pulse_quality', []))
+    pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(patient_data.get('Pulse Rate (BPM)', 70)))
+    pulse_quality = st.multiselect("Pulse Quality", ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"], key="pulse_quality", default=[patient_data.get('Pulse Quality', '')])
 
     st.subheader("Additional TCM Diagnostic Information")
-    emotions = st.text_area("Emotional State", key="emotions", value=patient_data.get('emotions', ''))
-    lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('lifestyle', ''))
-    medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('medical_history', ''))
+    emotions = st.text_area("Emotional State", key="emotions", value=patient_data.get('Emotional State', ''))
+    lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('Lifestyle Factors (diet, exercise, stress, etc.)', ''))
+    medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('Relevant Medical History', ''))
 
     st.subheader("Debug Information")
     st.write("Session State:", st.session_state)
 
     # Update session state with current form values
     st.session_state.patient_info.update({
-        'name': name,
-        'dob': dob_str,
-        'gender': gender,
-        'chief_complaint': chief_complaint,
-        'complaint_duration': complaint_duration,
-        'complexion': complexion,
-        'tongue_color': tongue_color,
-        'tongue_coating': tongue_coating,
-        'tongue_shape': tongue_shape,
-        'voice_sound': voice_sound,
-        'breath_odor': breath_odor,
-        'cold_heat_sensation': cold_heat_sensation,
-        'sweating': sweating,
-        'appetite': appetite,
-        'sleep': sleep,
-        'bowel_movements': bowel_movements,
-        'urination': urination,
-        'pain': pain,
-        'pulse_rate': pulse_rate,
-        'pulse_quality': pulse_quality,
-        'emotions': emotions,
-        'lifestyle': lifestyle,
-        'medical_history': medical_history
+        'Patient Name': name,
+        'Date of Birth (DD/MM/YYYY)': dob_str,
+        'Gender': gender,
+        'Chief Complaint': chief_complaint,
+        'Duration of Complaint': complaint_duration,
+        'Complexion': complexion,
+        'Tongue Color': tongue_color,
+        'Tongue Coating': tongue_coating,
+        'Tongue Shape and Features': tongue_shape,
+        'Voice Sound': voice_sound,
+        'Breath Odor': breath_odor,
+        'Cold/Heat Sensation': cold_heat_sensation,
+        'Sweating': sweating,
+        'Appetite and Thirst': appetite,
+        'Sleep Pattern': sleep,
+        'Bowel Movements': bowel_movements,
+        'Urination': urination,
+        'Pain (location, nature, factors that alleviate or aggravate)': pain,
+        'Pulse Rate (BPM)': pulse_rate,
+        'Pulse Quality': pulse_quality[0] if pulse_quality else '',
+        'Emotional State': emotions,
+        'Lifestyle Factors (diet, exercise, stress, etc.)': lifestyle,
+        'Relevant Medical History': medical_history
     })
 
     st.write("Updated Session State:", st.session_state)
