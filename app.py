@@ -201,7 +201,7 @@ def generate_diagnostic_report(context, user_input):
         Patient Information: {user_input}
         """
 
-                query_results = query_weaviate(user_message)
+        query_results = query_weaviate(user_message)
         section_context = "\n".join([result['text'] for result in query_results])
 
         with st.spinner(f"Generating {section}..."):
