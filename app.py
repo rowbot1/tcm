@@ -14,15 +14,11 @@ from googleapiclient.discovery import build
 
 # --- CONFIGURATION ---
 
-# Streamlit page setup
-st.set_page_config(page_title="AcuAssist", layout="wide")
-st.title("AcuAssist: TCM Diagnostic Report Generator")
-
 # Load sensitive data from secrets
 WEAVIATE_URL = st.secrets["api_keys"]["WEAVIATE_URL"]
 WEAVIATE_API_KEY = st.secrets["api_keys"]["WEAVIATE_API_KEY"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
-INDEX_NAME = "tcmapp"
+INDEX_NAME = "tcmapp"  # Adjust as needed if your Weaviate index name is different
 
 GOOGLE_SHEETS_CREDENTIALS = st.secrets["gcp_service_account"]
 SHEET_ID = st.secrets["google_sheets"]["sheet_id"]
@@ -30,6 +26,7 @@ SHEET_ID = st.secrets["google_sheets"]["sheet_id"]
 # Initialize Weaviate client
 auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
 weaviate_client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
+
 
 # --- UTILITY FUNCTIONS ---
 
@@ -40,8 +37,6 @@ def calculate_age(born):
 def clear_patient_data():
     st.session_state.patient_info = {}
     st.session_state.generated_report = None
-    st.session_state.search_success = None
-    st.session_state.found_patient_data = None
     st.success("Patient data has been cleared.")
 
 # Google Sheets API Initialization
@@ -98,38 +93,55 @@ def save_or_update_patient(sheets_service, patient_data):
     except Exception as e:
         st.error(f"Error saving/updating patient data: {e}")
 
-# Initialize resources
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-groq_client = groq.Client(api_key=GROQ_API_KEY)
-sheets_service = initialize_sheets_service()
 
-# Session state for better UX
-if "patient_info" not in st.session_state:
-    st.session_state.patient_info = {}
-if "generated_report" not in st.session_state:
-    st.session_state.generated_report = None
-if "search_success" not in st.session_state:
-    st.session_state.search_success = None
-if "found_patient_data" not in st.session_state:
-    st.session_state.found_patient_data = None
+# --- STYLING ---
+
+st.markdown(
+    """
+    <style>
+    .stApp {
+        max-width: 1200px; 
+        margin: 0 auto;  
+    }
+    .stTextInput, .stTextArea, .stSelectbox {
+        width: 100%;  
+    }
+    .stButton {
+        margin-top: 20px;
+    }
+    .stSubheader {
+        margin-top: 30px;
+        border-bottom: 1px solid #eee;
+    }
+    .section-title {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# --- QUERY & REPORT GENERATION FUNCTIONS ---
 
 def query_weaviate(query_text, top_k=5):
     if weaviate_client is None:
         raise ValueError("Weaviate client is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
     near_vector = {"vector": query_vector}
-    results = weaviate_client.query.get("TCMApp", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
-    
-    if 'data' in results and 'Get' in results['data'] and 'TCMApp' in results['data']['Get']:
-        return results['data']['Get']['TCMApp']
+    results = weaviate_client.query.get(INDEX_NAME, ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
+
+    if 'data' in results and 'Get' in results['data'] and INDEX_NAME in results['data']['Get']:
+        return results['data']['Get'][INDEX_NAME]
     else:
         st.error(f"Unexpected response format: {results}")
         return []
 
+
 def generate_diagnostic_report_part(system_message, user_message, context):
     try:
         response = groq_client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="mixtral-8x7b-32768", 
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": f"Context: {context}\n\nUser Query: {user_message}"}
@@ -144,6 +156,7 @@ def generate_diagnostic_report_part(system_message, user_message, context):
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
         return None
+
 
 def generate_diagnostic_report(context, user_input):
     patient_info = json.loads(user_input)
@@ -189,9 +202,21 @@ def generate_diagnostic_report(context, user_input):
                 st.warning(f"Failed to generate {section}. Moving to the next section.")
 
         progress_bar.progress((i + 1) / len(report_sections))
-        time.sleep(1)
+        time.sleep(1)  # Small delay for better UX
 
-    return document
+    return
+# --- MAIN APP ---
+
+# Initialize resources
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+groq_client = groq.Client(api_key=GROQ_API_KEY)
+sheets_service = initialize_sheets_service()
+
+# Session state for better UX
+if "patient_info" not in st.session_state:
+    st.session_state.patient_info = {}
+if "generated_report" not in st.session_state:
+    st.session_state.generated_report = None
 
 def patient_info_page():
     st.subheader("Patient Search")
@@ -202,22 +227,16 @@ def patient_info_page():
         found_patient = search_patient(sheets_service, search_name)
         if found_patient:
             st.success(f"Patient '{search_name}' found!")
-            st.session_state.found_patient_data = found_patient
-            st.session_state.search_success = True
             st.session_state.patient_info = found_patient
-            st.experimental_rerun()
+            st.experimental_rerun()  # Refresh the page with the found data
         else:
             st.warning(f"No patient found with name '{search_name}'")
-            st.session_state.search_success = False
-            st.session_state.found_patient_data = None
-            st.session_state.patient_info = {}
 
     st.subheader("Basic Information")
-    
     patient_data = st.session_state.get('patient_info', {})
 
     name = st.text_input("Patient Name", key="name", value=patient_data.get('Patient Name', ''))
-    
+
     dob = patient_data.get('Date of Birth (DD/MM/YYYY)', '')
     dob_day, dob_month, dob_year = 1, 1, 1990
     if dob:
@@ -274,10 +293,10 @@ def patient_info_page():
 
     st.write("4. Palpation (切 qiè)")
     pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(patient_data.get('Pulse Rate (BPM)', 70)))
-    
+
     pulse_quality_options = ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"]
     stored_pulse_quality = patient_data.get('Pulse Quality', '')
-    
+
     if isinstance(stored_pulse_quality, str):
         default_pulse_quality = [item.strip() for item in stored_pulse_quality.split(',') if item.strip() in pulse_quality_options]
     elif isinstance(stored_pulse_quality, list):
@@ -320,6 +339,7 @@ def patient_info_page():
         'Relevant Medical History': medical_history
     })
 
+
 def view_report_page():
     if st.session_state.generated_report:
         doc = st.session_state.generated_report
@@ -340,53 +360,59 @@ def view_report_page():
         st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
 
 def main():
-    # Top Navigation Buttons
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        page = st.selectbox("Go to", ["Patient Information", "View Report"])
-    with col2:
-        if st.button("Save Patient Information"):
-            if 'Patient Name' in st.session_state.patient_info and st.session_state.patient_info['Patient Name']:
-                save_or_update_patient(sheets_service, st.session_state.patient_info)
-            else:
-                st.error("Please enter patient name before saving")
-    with col3:
-        if st.button("Generate TCM Diagnostic Report"):
-            if len(st.session_state.patient_info) > 10:
-                try:
-                    serializable_patient_info = st.session_state.patient_info.copy()
-                    serializable_patient_info['Age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['Date of Birth (DD/MM/YYYY)'], "%d/%m/%Y"))
+    # Top Navigation (Simplified)
+    page = st.sidebar.radio("Go to", ["Patient Information", "View Report"])
 
-                    user_input = json.dumps(serializable_patient_info, indent=2)
+    # Sidebar Actions
+    st.sidebar.subheader("Actions")
 
-                    # Query Weaviate for initial context
-                    query_results = query_weaviate(user_input)
-                    context = "\n".join([result['text'] for result in query_results])
+    with st.sidebar:
+        if page == "Patient Information":
+            if st.button("Save Patient Information"):
+                if 'Patient Name' in st.session_state.patient_info and st.session_state.patient_info['Patient Name']:
+                    save_or_update_patient(sheets_service, st.session_state.patient_info)
+                else:
+                    st.error("Please enter patient name before saving")
 
-                    start_time = time.time()
-                    report = generate_diagnostic_report(context, user_input)
-                    end_time = time.time()
+            if st.button("Generate TCM Diagnostic Report"):
+                if len(st.session_state.patient_info) > 10:  # Check if enough info is filled
+                    try:
+                        serializable_patient_info = st.session_state.patient_info.copy()
+                        serializable_patient_info['Age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['Date of Birth (DD/MM/YYYY)'], "%d/%m/%Y"))
 
-                    if report:
-                        st.success(f"Report generated in {end_time - start_time:.2f} seconds")
-                        st.session_state.generated_report = report
-                        st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
-                    else:
-                        st.error("Failed to generate the report. Please try again.")
-                except Exception as e:
-                    st.error(f"An error occurred during report generation: {str(e)}")
-            else:
-                st.warning("Please fill in more patient information before generating a report.")
-    with col4:
+                        user_input = json.dumps(serializable_patient_info, indent=2)
+
+                        # Query Weaviate for initial context
+                        query_results = query_weaviate(user_input)
+                        context = "\n".join([result['text'] for result in query_results])
+
+                        start_time = time.time()
+                        report = generate_diagnostic_report(context, user_input)
+                        end_time = time.time()
+
+                        if report:
+                            st.success(f"Report generated in {end_time - start_time:.2f} seconds")
+                            st.session_state.generated_report = report
+                            st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+                        else:
+                            st.error("Failed to generate the report. Please try again.")
+                    except Exception as e:
+                        st.error(f"An error occurred during report generation: {str(e)}")
+                else:
+                    st.warning("Please fill in more patient information before generating a report.")
+        # Clear button for both pages
         if st.button("Clear Form"):
             clear_patient_data()
-            st.experimental_rerun()
+            st.experimental_rerun()  # Refresh the page after clearing
 
-    # Display the selected page
     if page == "Patient Information":
+        st.title("AcuAssist: Patient Information")
         patient_info_page()
     elif page == "View Report":
+        st.title("AcuAssist: TCM Diagnostic Report")
         view_report_page()
 
 if __name__ == "__main__":
     main()
+
+        
