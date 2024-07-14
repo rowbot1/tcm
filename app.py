@@ -312,7 +312,7 @@ def patient_info_page():
     breath_odor = st.text_input("Breath Odor", key="breath_odor", value=patient_data.get('Breath Odor', ''))
 
     st.write("3. Inquiry (問 wèn)")
-    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(patient_data.get('Cold/Heat Sensation', 'Normal')))
+    cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Not observed","Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(patient_data.get('Cold/Heat Sensation', 'Normal')))
     sweating = st.text_input("Sweating", key="sweating", value=patient_data.get('Sweating', ''))
     appetite = st.text_input("Appetite and Thirst", key="appetite", value=patient_data.get('Appetite and Thirst', ''))
     sleep = st.text_input("Sleep Pattern", key="sleep", value=patient_data.get('Sleep Pattern', ''))
