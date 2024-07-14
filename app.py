@@ -100,27 +100,38 @@ st.markdown(
     """
     <style>
     .stApp {
-        max-width: 1200px; 
-        margin: 0 auto;  
+        max-width: 1200px; /* Adjust width as needed */
+        margin: 0 auto;  /* Center the content */
+        background-color: #f4f4f4; /* Light background for the app */
+        padding: 20px;
+        border-radius: 10px; /* Optional rounded corners */
     }
+
     .stTextInput, .stTextArea, .stSelectbox {
-        width: 100%;  
+        width: 100%;  /* Make input fields full width */
+        border: 1px solid #ccc; /* Add a subtle border */
+        padding: 10px; /* Add some padding */
     }
+
     .stButton {
-        margin-top: 20px;
+        background-color: #007bff; /* Primary blue color */
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px; /* Slightly rounded corners */
     }
+
     .stSubheader {
+        color: #333; /* Darker color for subheaders */
         margin-top: 30px;
-        border-bottom: 1px solid #eee;
-    }
-    .section-title {
-        font-size: 24px;
-        font-weight: bold;
+        border-bottom: 1px solid #ddd;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+
 
 # --- QUERY & REPORT GENERATION FUNCTIONS ---
 
@@ -190,7 +201,7 @@ def generate_diagnostic_report(context, user_input):
         Patient Information: {user_input}
         """
 
-        query_results = query_weaviate(user_message)
+                query_results = query_weaviate(user_message)
         section_context = "\n".join([result['text'] for result in query_results])
 
         with st.spinner(f"Generating {section}..."):
@@ -204,7 +215,8 @@ def generate_diagnostic_report(context, user_input):
         progress_bar.progress((i + 1) / len(report_sections))
         time.sleep(1)  # Small delay for better UX
 
-    return
+    return document
+
 # --- MAIN APP ---
 
 # Initialize resources
@@ -309,7 +321,9 @@ def patient_info_page():
     st.subheader("Additional TCM Diagnostic Information")
     emotions = st.text_area("Emotional State", key="emotions", value=patient_data.get('Emotional State', ''))
     lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('Lifestyle Factors (diet, exercise, stress, etc.)', ''))
-    medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('Relevant Medical History', ''))
+    medical_history
+    
+    st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('Relevant Medical History', ''))
 
     # Update session state with current form values
     st.session_state.patient_info.update({
@@ -360,47 +374,44 @@ def view_report_page():
         st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
 
 def main():
-    # Top Navigation (Simplified)
-    page = st.sidebar.radio("Go to", ["Patient Information", "View Report"])
+    # Top Navigation Buttons (Reinstated)
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        page = st.selectbox("Go to", ["Patient Information", "View Report"])
+    with col2:
+        if st.button("Save Patient Information"):
+            if 'Patient Name' in st.session_state.patient_info and st.session_state.patient_info['Patient Name']:
+                save_or_update_patient(sheets_service, st.session_state.patient_info)
+            else:
+                st.error("Please enter patient name before saving")
+    with col3:
+        if st.button("Generate TCM Diagnostic Report"):
+            if len(st.session_state.patient_info) > 10:  # Check if enough info is filled
+                try:
+                    serializable_patient_info = st.session_state.patient_info.copy()
+                    serializable_patient_info['Age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['Date of Birth (DD/MM/YYYY)'], "%d/%m/%Y"))
 
-    # Sidebar Actions
-    st.sidebar.subheader("Actions")
+                    user_input = json.dumps(serializable_patient_info, indent=2)
 
-    with st.sidebar:
-        if page == "Patient Information":
-            if st.button("Save Patient Information"):
-                if 'Patient Name' in st.session_state.patient_info and st.session_state.patient_info['Patient Name']:
-                    save_or_update_patient(sheets_service, st.session_state.patient_info)
-                else:
-                    st.error("Please enter patient name before saving")
+                    # Query Weaviate for initial context
+                    query_results = query_weaviate(user_input)
+                    context = "\n".join([result['text'] for result in query_results])
 
-            if st.button("Generate TCM Diagnostic Report"):
-                if len(st.session_state.patient_info) > 10:  # Check if enough info is filled
-                    try:
-                        serializable_patient_info = st.session_state.patient_info.copy()
-                        serializable_patient_info['Age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['Date of Birth (DD/MM/YYYY)'], "%d/%m/%Y"))
+                    start_time = time.time()
+                    report = generate_diagnostic_report(context, user_input)
+                    end_time = time.time()
 
-                        user_input = json.dumps(serializable_patient_info, indent=2)
-
-                        # Query Weaviate for initial context
-                        query_results = query_weaviate(user_input)
-                        context = "\n".join([result['text'] for result in query_results])
-
-                        start_time = time.time()
-                        report = generate_diagnostic_report(context, user_input)
-                        end_time = time.time()
-
-                        if report:
-                            st.success(f"Report generated in {end_time - start_time:.2f} seconds")
-                            st.session_state.generated_report = report
-                            st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
-                        else:
-                            st.error("Failed to generate the report. Please try again.")
-                    except Exception as e:
-                        st.error(f"An error occurred during report generation: {str(e)}")
-                else:
-                    st.warning("Please fill in more patient information before generating a report.")
-        # Clear button for both pages
+                    if report:
+                        st.success(f"Report generated in {end_time - start_time:.2f} seconds")
+                        st.session_state.generated_report = report
+                        st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+                    else:
+                        st.error("Failed to generate the report. Please try again.")
+                except Exception as e:
+                    st.error(f"An error occurred during report generation: {str(e)}")
+            else:
+                st.warning("Please fill in more patient information before generating a report.")
+    with col4:
         if st.button("Clear Form"):
             clear_patient_data()
             st.experimental_rerun()  # Refresh the page after clearing
@@ -415,4 +426,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-        
+
