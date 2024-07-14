@@ -205,6 +205,8 @@ def patient_info_page():
             st.success(f"Patient '{search_name}' found!")
             st.session_state.found_patient_data = found_patient
             st.session_state.search_success = True
+            # Update patient_info with found data
+            st.session_state.patient_info = found_patient
         else:
             st.warning(f"No patient found with name '{search_name}'")
             st.session_state.search_success = False
@@ -212,8 +214,8 @@ def patient_info_page():
 
     st.subheader("Basic Information")
     
-    # Use found patient data if available, otherwise use session state or empty string
-    patient_data = st.session_state.found_patient_data if st.session_state.get('search_success', False) else st.session_state.patient_info
+    # Use patient_info, which now contains found patient data if a search was successful
+    patient_data = st.session_state.patient_info
 
     name = st.text_input("Patient Name", key="name", value=patient_data.get('name', ''))
     
@@ -274,6 +276,7 @@ def patient_info_page():
     lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('lifestyle', ''))
     medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('medical_history', ''))
 
+    # Update session state with current form values
     st.session_state.patient_info.update({
         'name': name,
         'dob': dob_str,
