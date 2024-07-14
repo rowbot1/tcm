@@ -121,12 +121,6 @@ st.markdown(
         color: #2c3e50;
     }
 
-    /* Section Titles */
-    .stMarkdown h2, .stMarkdown h3 {
-        color: #1f618d !important;
-        background-color: #f0f2f6 !important;
-    }
-
     /* Buttons */
     .stButton>button {
         color: #ffffff;
@@ -215,10 +209,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-
-
-
 
 # --- QUERY & REPORT GENERATION FUNCTIONS ---
 
