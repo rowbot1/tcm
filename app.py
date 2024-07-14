@@ -4,6 +4,7 @@ import json
 import time
 from sentence_transformers import SentenceTransformer
 import weaviate
+from weaviate.auth import AuthApiKey
 import groq
 from docx import Document
 from io import BytesIO
@@ -24,8 +25,8 @@ st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 
 # Load API keys from Streamlit secrets
 WEAVIATE_URL = st.secrets["api_keys"]["WEAVIATE_URL"]
-GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 WEAVIATE_API_KEY = st.secrets["api_keys"]["WEAVIATE_API_KEY"]
+GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 INDEX_NAME = "tcmapp"
 
 # Set up Google Sheets credentials
@@ -50,7 +51,8 @@ except Exception as e:
 @st.cache_resource
 def init_resources():
     try:
-        client = weaviate.Client(WEAVIATE_URL)
+        auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
+        client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
         embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         groq_client = groq.Client(api_key=GROQ_API_KEY)
         return client, embedding_model, groq_client
