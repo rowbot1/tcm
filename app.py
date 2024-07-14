@@ -360,7 +360,11 @@ def patient_info_page():
         st.subheader("3. Inquiry (問 wèn)")
         col1, col2 = st.columns(2)
         with col1:
-            cold_heat_sensation = st.selectbox("Cold/Heat Sensation", ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"], key="cold_heat_sensation", index=["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"].index(patient_data.get('Cold/Heat Sensation', 'Normal')))
+            cold_heat_options = ["Aversion to Cold", "Aversion to Heat", "Alternating Cold and Heat", "Normal"]
+            stored_cold_heat = patient_data.get('Cold/Heat Sensation', 'Normal')
+            cold_heat_index = cold_heat_options.index(stored_cold_heat) if stored_cold_heat in cold_heat_options else 3  # Default to 'Normal'
+            cold_heat_sensation = st.selectbox("Cold/Heat Sensation", cold_heat_options, key="cold_heat_sensation", index=cold_heat_index)
+            
             sweating = st.text_input("Sweating", key="sweating", value=patient_data.get('Sweating', ''))
             appetite = st.text_input("Appetite and Thirst", key="appetite", value=patient_data.get('Appetite and Thirst', ''))
         with col2:
