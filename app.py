@@ -105,7 +105,14 @@ def query_weaviate(query_text, top_k=5):
     query_vector = embedding_model.encode(query_text).tolist()
     near_vector = {"vector": query_vector}
     results = weaviate_client.query.get("Document", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
-    return results['data']['Get']['Document']
+    
+    st.write("Weaviate response:", results)  # Add this line to debug the response structure
+    
+    if 'data' in results:
+        return results['data']['Get']['Document']
+    else:
+        st.error(f"Unexpected response format: {results}")
+        return []
 
 def generate_diagnostic_report_part(system_message, user_message):
     try:
