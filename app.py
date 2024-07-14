@@ -10,7 +10,6 @@ import groq
 from docx import Document
 import gspread
 from google.oauth2.service_account import Credentials
-import pandas as pd
 from googleapiclient.discovery import build
 
 # --- CONFIGURATION ---
@@ -100,7 +99,6 @@ if "search_success" not in st.session_state:
 if "found_patient_data" not in st.session_state:
     st.session_state.found_patient_data = None
 
-@st.cache_data
 def query_weaviate(query_text, top_k=5):
     if weaviate_client is None:
         raise ValueError("Weaviate client is not initialized")
@@ -114,13 +112,13 @@ def query_weaviate(query_text, top_k=5):
         st.error(f"Unexpected response format: {results}")
         return []
 
-def generate_diagnostic_report_part(system_message, user_message):
+def generate_diagnostic_report_part(system_message, user_message, context):
     try:
         response = groq_client.chat.completions.create(
             model="mixtral-8x7b-32768",
             messages=[
                 {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message}
+                {"role": "user", "content": f"Context: {context}\n\nUser Query: {user_message}"}
             ],
             temperature=0.7,
             max_tokens=4000,
@@ -140,7 +138,7 @@ def generate_diagnostic_report(context, user_input):
 
     system_message = f"""You are a world-renowned Traditional Chinese Medicine practitioner with decades of experience and deep knowledge of both traditional and modern TCM practices. Your diagnostic reports are known for their exceptional detail, insight, and thoroughness.
 
-    You are generating a report for {patient_name}, a {patient_age}-year-old patient. Ensure that your report is personalized and refers to the patient by name where appropriate."""
+    You are generating a report for {patient_name}, a {patient_age}-year-old patient. Ensure that your report is personalized and refers to the patient by name where appropriate. Base your analysis and recommendations primarily on the provided context, which contains relevant TCM knowledge."""
 
     report_sections = [
         "1. Patient Overview",
@@ -162,13 +160,16 @@ def generate_diagnostic_report(context, user_input):
         user_message = f"""
         Based on the following patient information and context, generate a comprehensive and detailed TCM diagnostic report section for: {section}
         Ensure your response is extremely thorough and professional, demonstrating deep understanding of TCM principles and providing well-reasoned insights. Do not repeat the section title in your response.
-        Context: {context}
         Patient Information: {user_input}
         Generate the content for {section} of the TCM Diagnostic Report:
         """
 
+        # Query Weaviate for relevant context
+        query_results = query_weaviate(user_message)
+        section_context = "\n".join([result['text'] for result in query_results])
+
         with st.spinner(f"Generating {section}..."):
-            section_content = generate_diagnostic_report_part(system_message, user_message)
+            section_content = generate_diagnostic_report_part(system_message, user_message, section_context)
             if section_content:
                 document.add_heading(section, level=1)
                 document.add_paragraph(section_content)
@@ -307,16 +308,9 @@ def main():
 
                     user_input = json.dumps(serializable_patient_info, indent=2)
 
-                    context = ""
-                    if weaviate_client is not None and embedding_model is not None:
-                        try:
-                            query_results = query_weaviate(user_input)
-                            context = "\n".join([result['text'] for result in query_results])
-                        except Exception as e:
-                            st.error(f"Error querying Weaviate: {str(e)}")
-                            st.warning("Proceeding with report generation without Weaviate context.")
-                    else:
-                        st.warning("Weaviate client or embedding model not initialized. Proceeding without context.")
+                    # Query Weaviate for initial context
+                    query_results = query_weaviate(user_input)
+                    context = "\n".join([result['text'] for result in query_results])
 
                     start_time = time.time()
                     report = generate_diagnostic_report(context, user_input)
@@ -336,9 +330,7 @@ def main():
                 st.warning("Please fill in more patient information before generating a report.")
     with col4:
         if st.button("Clear Form"):
-            st.session_state.patient_info = {}
-            st.session_state.search_success = None
-            st.session_state.found_patient_data = None
+            clear_patient_data()
             st.experimental_rerun()
 
     # Display the selected page
