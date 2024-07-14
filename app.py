@@ -100,13 +100,17 @@ st.markdown(
     """
 <style>
 .stApp {
-    max-width: 1200px; 
-    margin: 0 auto;  
-    background-color: white; 
-    padding: 30px;         
-    border-radius: 8px;     
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
-    font-family: "Helvetica Neue", sans-serif; 
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-family: "Helvetica Neue", sans-serif;
+}
+
+/* Add some margin to the top to prevent content from sticking to the top */
+.stApp > div:first-child {
+    margin-top: 20px;
 }
 
 .stTextInput, .stTextArea, .stSelectbox {
@@ -115,12 +119,12 @@ st.markdown(
     padding: 12px;           
     border-radius: 4px;
     margin-bottom: 15px; 
-    background-color: #f5f5f5; /* Slightly off-white background */
-    color: #333; /* Darker text color for contrast */
+    background-color: #f5f5f5; 
+    color: #333; 
 }
 
 .stButton { /* Main button style */
-    background-color: #0069d9;  /* Lighter blue for main button */
+    background-color: #0069d9;
     color: white;
     padding: 12px 20px;
     border: none;
@@ -129,14 +133,14 @@ st.markdown(
     transition: background-color 0.3s ease; 
 }
 .stButton:hover {
-    background-color: #0056b3; /* Darker shade on hover */
+    background-color: #0056b3; 
 }
 .stButton.secondary { /* Secondary button style */
     background-color: #6c757d;  
     color: white;
 }
 .stButton.secondary:hover {
-    background-color: #5a6268; /* Darker shade on hover */
+    background-color: #5a6268; 
 }
 
 .stSubheader {
@@ -147,6 +151,7 @@ st.markdown(
     margin-bottom: 20px;  
 }
 </style>
+
 
 
     """,
