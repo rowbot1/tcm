@@ -318,7 +318,7 @@ def patient_info_page():
 
     pulse_quality = st.multiselect("Pulse Quality", pulse_quality_options, key="pulse_quality", default=default_pulse_quality)
 
-        st.subheader("Additional TCM Diagnostic Information")
+    st.subheader("Additional TCM Diagnostic Information")
     emotions = st.text_area("Emotional State", key="emotions", value=patient_data.get('Emotional State', ''))
     lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('Lifestyle Factors (diet, exercise, stress, etc.)', ''))
     medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('Relevant Medical History', ''))
