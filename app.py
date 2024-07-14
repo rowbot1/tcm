@@ -58,14 +58,14 @@ def search_patient(sheets_service, name):
         result = (
             sheets_service.spreadsheets()
             .values()
-            .get(spreadsheetId=SHEET_ID, range="A:Z")  # Adjust range if needed
+            .get(spreadsheetId=SHEET_ID, range="A:Z")
             .execute()
         )
         values = result.get("values", [])
-        headers = values[0]  # Assume first row is headers
-        for row in values[1:]:  # Skip header row
-            if row[0].lower() == name.lower():  # Case-insensitive name matching
-                return dict(zip(headers, row))  # Return patient data as a dictionary
+        headers = values[0]
+        for row in values[1:]:
+            if row[0].lower() == name.lower():
+                return dict(zip(headers, row))
         return None
     except Exception as e:
         st.error(f"Error searching for patient: {e}")
@@ -76,11 +76,10 @@ def save_or_update_patient(sheets_service, patient_data):
     try:
         result = sheets_service.spreadsheets().values().get(spreadsheetId=SHEET_ID, range="A:A").execute()
         names = result.get('values', [])
-        row_index = next((i for i, name in enumerate(names) if name and name[0] == patient_data["name"]), None)
+        row_index = next((i for i, name in enumerate(names) if name and name[0] == patient_data["Patient Name"]), None)
 
         values = [list(patient_data.values())]
         if row_index is not None:
-            # Update existing row
             range_name = f'Sheet1!A{row_index + 1}'
             sheets_service.spreadsheets().values().update(
                 spreadsheetId=SHEET_ID,
@@ -89,7 +88,6 @@ def save_or_update_patient(sheets_service, patient_data):
                 body={"values": values}
             ).execute()
         else:
-            # Append new row
             sheets_service.spreadsheets().values().append(
                 spreadsheetId=SHEET_ID,
                 range="Sheet1!A1",
@@ -103,7 +101,7 @@ def save_or_update_patient(sheets_service, patient_data):
 # Initialize resources
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 groq_client = groq.Client(api_key=GROQ_API_KEY)
-sheets_service = initialize_sheets_service()  # Initialize Google Sheets API
+sheets_service = initialize_sheets_service()
 
 # Session state for better UX
 if "patient_info" not in st.session_state:
@@ -149,8 +147,8 @@ def generate_diagnostic_report_part(system_message, user_message, context):
 
 def generate_diagnostic_report(context, user_input):
     patient_info = json.loads(user_input)
-    patient_name = patient_info.get('name', 'Patient')
-    patient_age = patient_info.get('age', 'Unknown age')
+    patient_name = patient_info.get('Patient Name', 'Patient')
+    patient_age = patient_info.get('Age', 'Unknown age')
 
     system_message = f"""You are a TCM practitioner tasked with generating a diagnostic report. Your knowledge is strictly limited to the information provided in the context. Do not use any external knowledge or make assumptions beyond what is explicitly stated in the context or patient information.
 
@@ -179,7 +177,6 @@ def generate_diagnostic_report(context, user_input):
         Patient Information: {user_input}
         """
 
-        # Query Weaviate for relevant context
         query_results = query_weaviate(user_message)
         section_context = "\n".join([result['text'] for result in query_results])
 
@@ -192,7 +189,7 @@ def generate_diagnostic_report(context, user_input):
                 st.warning(f"Failed to generate {section}. Moving to the next section.")
 
         progress_bar.progress((i + 1) / len(report_sections))
-        time.sleep(1)  # Add a small delay to avoid rate limiting
+        time.sleep(1)
 
     return document
 
@@ -205,7 +202,6 @@ def patient_info_page():
         found_patient = search_patient(sheets_service, search_name)
         if found_patient:
             st.success(f"Patient '{search_name}' found!")
-            st.write("Debug: Found patient data:", found_patient)
             st.session_state.found_patient_data = found_patient
             st.session_state.search_success = True
             st.session_state.patient_info = found_patient
@@ -219,13 +215,10 @@ def patient_info_page():
     st.subheader("Basic Information")
     
     patient_data = st.session_state.get('patient_info', {})
-    st.write("Debug: Current patient_data:", patient_data)
 
     name = st.text_input("Patient Name", key="name", value=patient_data.get('Patient Name', ''))
-    st.write(f"Debug: Name value: {name}")
     
     dob = patient_data.get('Date of Birth (DD/MM/YYYY)', '')
-    st.write(f"Debug: DOB value from patient_data: {dob}")
     dob_day, dob_month, dob_year = 1, 1, 1990
     if dob:
         try:
@@ -252,7 +245,6 @@ def patient_info_page():
         age = None
 
     gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(patient_data.get('Gender', 'Male')))
-    st.write(f"Debug: Gender value: {gender}")
 
     st.subheader("Chief Complaint")
     chief_complaint = st.text_area("Main Complaint", key="chief_complaint", value=patient_data.get('Chief Complaint', ''))
@@ -262,7 +254,8 @@ def patient_info_page():
 
     st.write("1. Inspection (望 wàng)")
     complexion = st.text_input("Complexion", key="complexion", value=patient_data.get('Complexion', ''))
-    tongue_color = st.selectbox("Tongue Color", ["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"], key="tongue_color", index=["Pale", "Red", "Dark Red", "Purple", "Bluish Purple"].index(patient_data.get('Tongue Color', 'Pale')))
+    tongue_color_options = ["Not observed", "Pale", "Red", "Dark Red", "Purple", "Bluish Purple"]
+    tongue_color = st.selectbox("Tongue Color", tongue_color_options, key="tongue_color", index=tongue_color_options.index(patient_data.get('Tongue Color', 'Not observed')))
     tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], key="tongue_coating", index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('Tongue Coating', 'Thin White')))
     tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=patient_data.get('Tongue Shape and Features', ''))
 
@@ -283,7 +276,15 @@ def patient_info_page():
     pulse_rate = st.number_input("Pulse Rate (BPM)", key="pulse_rate", min_value=40, max_value=200, value=int(patient_data.get('Pulse Rate (BPM)', 70)))
     
     pulse_quality_options = ["Floating", "Sinking", "Slow", "Rapid", "Strong", "Weak", "Wiry", "Slippery", "Rough"]
-    default_pulse_quality = patient_data.get('Pulse Quality', '').split(', ') if patient_data.get('Pulse Quality') else []
+    stored_pulse_quality = patient_data.get('Pulse Quality', '')
+    
+    if isinstance(stored_pulse_quality, str):
+        default_pulse_quality = [item.strip() for item in stored_pulse_quality.split(',') if item.strip() in pulse_quality_options]
+    elif isinstance(stored_pulse_quality, list):
+        default_pulse_quality = [item for item in stored_pulse_quality if item in pulse_quality_options]
+    else:
+        default_pulse_quality = []
+
     pulse_quality = st.multiselect("Pulse Quality", pulse_quality_options, key="pulse_quality", default=default_pulse_quality)
 
     st.subheader("Additional TCM Diagnostic Information")
@@ -291,13 +292,11 @@ def patient_info_page():
     lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('Lifestyle Factors (diet, exercise, stress, etc.)', ''))
     medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('Relevant Medical History', ''))
 
-    st.subheader("Debug Information")
-    st.write("Session State:", st.session_state)
-
     # Update session state with current form values
     st.session_state.patient_info.update({
         'Patient Name': name,
         'Date of Birth (DD/MM/YYYY)': dob_str,
+        'Age': str(age) if age is not None else '',
         'Gender': gender,
         'Chief Complaint': chief_complaint,
         'Duration of Complaint': complaint_duration,
@@ -314,14 +313,12 @@ def patient_info_page():
         'Bowel Movements': bowel_movements,
         'Urination': urination,
         'Pain (location, nature, factors that alleviate or aggravate)': pain,
-        'Pulse Rate (BPM)': pulse_rate,
+        'Pulse Rate (BPM)': str(pulse_rate),
         'Pulse Quality': ', '.join(pulse_quality),
         'Emotional State': emotions,
         'Lifestyle Factors (diet, exercise, stress, etc.)': lifestyle,
         'Relevant Medical History': medical_history
     })
-
-    st.write("Updated Session State:", st.session_state)
 
 def view_report_page():
     if st.session_state.generated_report:
@@ -349,7 +346,7 @@ def main():
         page = st.selectbox("Go to", ["Patient Information", "View Report"])
     with col2:
         if st.button("Save Patient Information"):
-            if 'name' in st.session_state.patient_info and st.session_state.patient_info['name']:
+            if 'Patient Name' in st.session_state.patient_info and st.session_state.patient_info['Patient Name']:
                 save_or_update_patient(sheets_service, st.session_state.patient_info)
             else:
                 st.error("Please enter patient name before saving")
@@ -358,7 +355,7 @@ def main():
             if len(st.session_state.patient_info) > 10:
                 try:
                     serializable_patient_info = st.session_state.patient_info.copy()
-                    serializable_patient_info['age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['dob'], "%d/%m/%Y"))
+                    serializable_patient_info['Age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['Date of Birth (DD/MM/YYYY)'], "%d/%m/%Y"))
 
                     user_input = json.dumps(serializable_patient_info, indent=2)
 
