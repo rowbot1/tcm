@@ -15,6 +15,10 @@ from googleapiclient.discovery import build
 
 # --- CONFIGURATION ---
 
+# Streamlit page setup
+st.set_page_config(page_title="AcuAssist", layout="wide")
+st.title("AcuAssist: TCM Diagnostic Report Generator")
+
 # Load sensitive data from secrets
 WEAVIATE_URL = st.secrets["api_keys"]["WEAVIATE_URL"]
 WEAVIATE_API_KEY = st.secrets["api_keys"]["WEAVIATE_API_KEY"]
@@ -29,10 +33,6 @@ auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
 client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
 schema = client.schema.get()
 st.write("Weaviate Schema:", schema)  # This will print the schema in Streamlit app for debugging
-
-# Streamlit page setup
-st.set_page_config(page_title="AcuAssist", layout="wide")
-st.title("AcuAssist: TCM Diagnostic Report Generator")
 
 # --- UTILITY FUNCTIONS ---
 
