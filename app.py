@@ -98,6 +98,7 @@ def save_or_update_patient(sheets_service, patient_data):
 
 st.markdown(
     """
+<style>
 .stApp {
     max-width: 1200px;
     margin: 0 auto;
@@ -150,6 +151,7 @@ st.markdown(
     border-bottom: none; 
     margin-bottom: 20px;  
 }
+</style>
 
 
 
