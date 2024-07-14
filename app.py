@@ -373,7 +373,7 @@ def patient_info_page():
             urination = st.text_input("Urination", key="urination", value=patient_data.get('Urination', ''))
         pain = st.text_area("Pain (location, nature, factors that alleviate or aggravate)", key="pain", value=patient_data.get('Pain (location, nature, factors that alleviate or aggravate)', ''))
 
-        sst.subheader("4. Palpation (切 qiè)")
+        st.subheader("4. Palpation (切 qiè)")
         col1, col2 = st.columns(2)
         with col1:
             stored_pulse_rate = patient_data.get('Pulse Rate (BPM)', '70')
