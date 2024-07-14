@@ -304,7 +304,13 @@ def patient_info_page():
     complexion = st.text_input("Complexion", key="complexion", value=patient_data.get('Complexion', ''))
     tongue_color_options = ["Not observed", "Pale", "Red", "Dark Red", "Purple", "Bluish Purple"]
     tongue_color = st.selectbox("Tongue Color", tongue_color_options, key="tongue_color", index=tongue_color_options.index(patient_data.get('Tongue Color', 'Not observed')))
-    tongue_coating = st.selectbox("Tongue Coating", ["Thin White", "Thick White", "Yellow", "Grey", "Black"], key="tongue_coating", index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('Tongue Coating', 'Thin White')))
+    tongue_coating = st.selectbox(
+    "Tongue Coating",
+    ["Thin White", "Thick White", "Yellow", "Grey", "Black"],
+    key="tongue_coating",
+    index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('Tongue Coating', 'Thin White')) if patient_data.get('Tongue Coating', 'Thin White') in ["Thin White", "Thick White", "Yellow", "Grey", "Black"] else 0
+)
+
     tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=patient_data.get('Tongue Shape and Features', ''))
 
     st.write("2. Auscultation and Olfaction (聞 wén)")
