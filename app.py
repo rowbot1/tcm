@@ -309,7 +309,7 @@ def main():
     # Top Navigation Buttons
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        page = st.selectbox("Go to", ["Patient Information", "View Report"])
+        page = st.selectbox("Navigation", ["Patient Information", "View Report"])
     with col2:
         if st.button("Save Patient Information"):
             if 'name' in st.session_state.patient_info and st.session_state.patient_info['name']:
