@@ -121,6 +121,12 @@ st.markdown(
         color: #2c3e50;
     }
 
+    /* Section Titles */
+    .stMarkdown h2, .stMarkdown h3 {
+        color: #1f618d !important;
+        background-color: #f0f2f6 !important;
+    }
+
     /* Buttons */
     .stButton>button {
         color: #ffffff;
@@ -135,7 +141,8 @@ st.markdown(
     /* Input widgets */
     .stTextInput>div>div>input, 
     .stSelectbox>div>div>select, 
-    .stTextArea>div>div>textarea {
+    .stTextArea>div>div>textarea,
+    .stNumberInput>div>div>input {
         background-color: #ffffff;
         color: #2c3e50;
         border: 1px solid #bdc3c7;
@@ -193,10 +200,22 @@ st.markdown(
     .css-17lntkn, .css-1ykc0ct, .css-1b0udyx {
         color: #2c3e50 !important;
     }
+
+    /* Specific adjustments for section titles and inputs */
+    .stMarkdown h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    .stTextInput, .stSelectbox, .stTextArea, .stNumberInput {
+        margin-top: 5px;
+        margin-bottom: 15px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 
 
