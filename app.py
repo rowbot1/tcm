@@ -2,76 +2,37 @@ import streamlit as st
 import datetime
 import json
 import time
+from io import BytesIO
 from sentence_transformers import SentenceTransformer
 import weaviate
 from weaviate.auth import AuthApiKey
 import groq
 from docx import Document
-from io import BytesIO
 import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
+from googleapiclient.discovery import build
 
-# Set up Streamlit
-st.set_page_config(page_title="AcuAssist", layout="wide", initial_sidebar_state="collapsed")
+# --- CONFIGURATION ---
 
-# Custom CSS to style buttons
-button_style = """
-    <style>
-        .stButton button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 14px 20px;
-            margin: 8px 0;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-        }
-        .stButton button:hover {
-            background-color: #45a049;
-        }
-    </style>
-"""
-st.markdown(button_style, unsafe_allow_html=True)
-
-# Load API keys from Streamlit secrets
+# Load sensitive data from secrets
 WEAVIATE_URL = st.secrets["api_keys"]["WEAVIATE_URL"]
 WEAVIATE_API_KEY = st.secrets["api_keys"]["WEAVIATE_API_KEY"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 INDEX_NAME = "tcmapp"
 
-# Set up Google Sheets credentials
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+GOOGLE_SHEETS_CREDENTIALS = st.secrets["gcp_service_account"]
+SHEET_ID = st.secrets["google_sheets"]["sheet_id"]
 
-try:
-    service_account_info = st.secrets["gcp_service_account"]
-    if isinstance(service_account_info, str):
-        service_account_info = json.loads(service_account_info)
+# Streamlit page setup
+st.set_page_config(page_title="AcuAssist", layout="wide")
+st.title("AcuAssist: TCM Diagnostic Report Generator")
 
-    creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
-    gc = gspread.authorize(creds)
+# --- UTILITY FUNCTIONS ---
 
-    sheet_id = st.secrets["google_sheets"]["sheet_id"]
-    sheet = gc.open_by_key(sheet_id).sheet1
-    st.success("Successfully connected to Google Sheets")
-except Exception as e:
-    st.error(f"An error occurred while setting up Google Sheets: {str(e)}")
-    sheet = None
-
-# Initialize resources
-@st.cache_resource
-def init_resources():
-    try:
-        auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
-        client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
-        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        groq_client = groq.Client(api_key=GROQ_API_KEY)
-        return client, embedding_model, groq_client
-    except Exception as e:
-        st.error(f"Error initializing resources: {str(e)}")
-        return None, None, None
-
-client, embedding_model, groq_client = init_resources()
+def calculate_age(born):
+    today = datetime.date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
 def clear_patient_data():
     st.session_state.patient_info = {}
@@ -80,17 +41,64 @@ def clear_patient_data():
     st.session_state.found_patient_data = None
     st.success("Patient data has been cleared.")
 
-def calculate_age(born):
-    today = datetime.date.today()
-    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+# Google Sheets API Initialization
+def initialize_sheets_service():
+    creds = Credentials.from_service_account_info(
+        GOOGLE_SHEETS_CREDENTIALS, scopes=["https://www.googleapis.com/auth/spreadsheets"]
+    )
+    service = build("sheets", "v4", credentials=creds)
+    return service
+
+# Patient Search Function
+def search_patient(sheets_service, name):
+    try:
+        result = (
+            sheets_service.spreadsheets()
+            .values()
+            .get(spreadsheetId=SHEET_ID, range="A:Z")  # Adjust range if needed
+            .execute()
+        )
+        values = result.get("values", [])
+        for row in values[1:]:  # Skip header row
+            if row[0] == name:  # Assuming name is in the first column
+                return row
+        return None
+    except Exception as e:
+        st.error(f"Error searching for patient: {e}")
+
+# Patient Save/Update Function
+def save_or_update_patient(sheets_service, patient_data):
+    existing_patient = search_patient(sheets_service, patient_data["name"])
+    if existing_patient:
+        # Update existing row (find the correct logic to identify the row)
+        pass
+    else:
+        # Append new row
+        sheets_service.spreadsheets().values().append(
+            spreadsheetId=SHEET_ID,
+            range="Sheet1!A1",
+            valueInputOption="USER_ENTERED",
+            body={"values": [list(patient_data.values())]},  # Convert to list of values
+        ).execute()
+
+# Initialize Weaviate and Groq clients (outside main function to avoid re-initialization)
+auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
+weaviate_client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+groq_client = groq.Client(api_key=GROQ_API_KEY)
+sheets_service = initialize_sheets_service()  # Initialize Google Sheets API
+
+# Session state for better UX
+if "patient_info" not in st.session_state:
+    st.session_state.patient_info = {}
 
 @st.cache_data
 def query_weaviate(query_text, top_k=5):
-    if client is None:
+    if weaviate_client is None:
         raise ValueError("Weaviate client is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
     near_vector = {"vector": query_vector}
-    results = client.query.get("Document", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
+    results = weaviate_client.query.get("Document", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
     return results['data']['Get']['Document']
 
 def generate_diagnostic_report_part(system_message, user_message):
@@ -158,43 +166,6 @@ def generate_diagnostic_report(context, user_input):
         time.sleep(1)  # Add a small delay to avoid rate limiting
 
     return document
-
-def search_patient(name):
-    if sheet is None:
-        st.error("Google Sheets connection is not available. Patient search is disabled.")
-        return None
-    try:
-        cell = sheet.find(name)
-        if cell:
-            row = sheet.row_values(cell.row)
-            headers = sheet.row_values(1)
-            patient_data = dict(zip(headers, row))
-            return {k: (v if v != '' else None) for k, v in patient_data.items()}
-        else:
-            return None
-    except Exception as e:
-        st.error(f"An error occurred while searching for the patient: {str(e)}")
-        return None
-
-def save_patient(patient_info):
-    if sheet is None:
-        st.error("Google Sheets connection is not available. Cannot save patient information.")
-        return
-    try:
-        headers = sheet.row_values(1)
-        row_data = [patient_info.get(header, "") for header in headers]
-
-        existing_patient = search_patient(patient_info['name'])
-        if existing_patient:
-            cell = sheet.find(patient_info['name'])
-            for col, value in enumerate(row_data, start=1):
-                sheet.update_cell(cell.row, col, value)
-            st.success(f"Updated information for patient: {patient_info['name']}")
-        else:
-            sheet.append_row(row_data)
-            st.success(f"Added new patient: {patient_info['name']}")
-    except Exception as e:
-        st.error(f"An error occurred while saving patient information: {str(e)}")
 
 def patient_info_page():
     st.subheader("Basic Information")
@@ -303,17 +274,14 @@ def view_report_page():
         st.warning("No report has been generated yet. Please go to the 'Patient Information' page to enter patient data and generate a report.")
 
 def main():
-    st.title("Welcome to AcuAssist")
-    st.write("This application helps generate comprehensive Traditional Chinese Medicine (TCM) diagnostic reports based on patient information and symptoms.")
-
     # Top Navigation Buttons
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        page = st.selectbox("Navigation", ["Patient Information", "View Report"])
+        page = st.selectbox("Go to", ["Patient Information", "View Report"])
     with col2:
         if st.button("Save Patient Information"):
             if 'name' in st.session_state.patient_info and st.session_state.patient_info['name']:
-                save_patient(st.session_state.patient_info)
+                save_or_update_patient(sheets_service, st.session_state.patient_info)
                 st.success("Patient information saved successfully")
             else:
                 st.error("Please enter patient name before saving")
@@ -327,7 +295,7 @@ def main():
                     user_input = json.dumps(serializable_patient_info, indent=2)
 
                     context = ""
-                    if client is not None and embedding_model is not None:
+                    if weaviate_client is not None and embedding_model is not None:
                         try:
                             query_results = query_weaviate(user_input)
                             context = "\n".join([result['text'] for result in query_results])
