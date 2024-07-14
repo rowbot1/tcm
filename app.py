@@ -279,16 +279,18 @@ def patient_info_page():
         with col2:
             gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(patient_data.get('Gender', 'Male')))
         with col3:
-            dob = patient_data.get('Date of Birth (DD/MM/YYYY)', '')
-            dob_day, dob_month, dob_year = 1, 1, 1990
+            dob = patient_data.get('Date of Birth (DD/MM/YY)', '')
             if dob:
                 try:
-                    dob_day, dob_month, dob_year = map(int, dob.split('/'))
-                except:
-                    st.error("Invalid date format in stored data. Using default values.")
+                    dob = datetime.datetime.strptime(dob, "%d/%m/%y")
+                except ValueError:
+                    st.error("Invalid date format in stored data. Using default value.")
+                    dob = datetime.datetime.now()
+            else:
+                dob = datetime.datetime.now()
             
-            dob = st.date_input("Date of Birth", value=datetime.date(dob_year, dob_month, dob_day))
-            dob_str = dob.strftime("%d/%m/%Y")
+            dob = st.date_input("Date of Birth", value=dob)
+            dob_str = dob.strftime("%d/%m/%y")
             age = calculate_age(dob)
             st.write(f"Patient Age: {age} years")
 
@@ -366,7 +368,7 @@ def patient_info_page():
     # Update session state with current form values
     st.session_state.patient_info.update({
         'Patient Name': name,
-        'Date of Birth (DD/MM/YYYY)': dob_str,
+        'Date of Birth (DD/MM/YY)': dob_str,
         'Age': str(age) if age is not None else '',
         'Gender': gender,
         'Chief Complaint': chief_complaint,
@@ -430,7 +432,7 @@ def main():
                 if len(st.session_state.patient_info) > 10:  # Check if enough info is filled
                     try:
                         serializable_patient_info = st.session_state.patient_info.copy()
-                        serializable_patient_info['Age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['Date of Birth (DD/MM/YYYY)'], "%d/%m/%Y"))
+                        serializable_patient_info['Age'] = calculate_age(datetime.datetime.strptime(serializable_patient_info['Date of Birth (DD/MM/YY)'], "%d/%m/%y"))
 
                         user_input = json.dumps(serializable_patient_info, indent=2)
 
