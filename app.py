@@ -204,25 +204,27 @@ def patient_info_page():
     if search_button:
         found_patient = search_patient(sheets_service, search_name)
         if found_patient:
+            st.success(f"Patient '{search_name}' found!")
+            st.write("Debug: Found patient data:", found_patient)
             st.session_state.found_patient_data = found_patient
             st.session_state.search_success = True
             st.session_state.patient_info = found_patient
-            st.experimental_rerun()
         else:
             st.warning(f"No patient found with name '{search_name}'")
             st.session_state.search_success = False
             st.session_state.found_patient_data = None
+            st.session_state.patient_info = {}
 
     st.subheader("Basic Information")
     
     patient_data = st.session_state.get('patient_info', {})
-
-    if st.session_state.get('search_success'):
-        st.success(f"Patient '{patient_data.get('name', '')}' found!")
+    st.write("Debug: Current patient_data:", patient_data)
 
     name = st.text_input("Patient Name", key="name", value=patient_data.get('name', ''))
+    st.write(f"Debug: Name value: {name}")
     
     dob = patient_data.get('dob', '')
+    st.write(f"Debug: DOB value from patient_data: {dob}")
     dob_day, dob_month, dob_year = 1, 1, 1990
     if dob:
         try:
@@ -249,6 +251,7 @@ def patient_info_page():
         age = None
 
     gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(patient_data.get('gender', 'Male')))
+    st.write(f"Debug: Gender value: {gender}")
 
     st.subheader("Chief Complaint")
     chief_complaint = st.text_area("Main Complaint", key="chief_complaint", value=patient_data.get('chief_complaint', ''))
@@ -284,6 +287,9 @@ def patient_info_page():
     lifestyle = st.text_area("Lifestyle Factors (diet, exercise, stress, etc.)", key="lifestyle", value=patient_data.get('lifestyle', ''))
     medical_history = st.text_area("Relevant Medical History", key="medical_history", value=patient_data.get('medical_history', ''))
 
+    st.subheader("Debug Information")
+    st.write("Session State:", st.session_state)
+
     # Update session state with current form values
     st.session_state.patient_info.update({
         'name': name,
@@ -310,6 +316,8 @@ def patient_info_page():
         'lifestyle': lifestyle,
         'medical_history': medical_history
     })
+
+    st.write("Updated Session State:", st.session_state)
 
 def view_report_page():
     if st.session_state.generated_report:
