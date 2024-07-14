@@ -102,53 +102,52 @@ st.markdown(
 .stApp {
     max-width: 1200px; 
     margin: 0 auto;  
-    background-color: white;  /* Cleaner white background */
-    padding: 30px;         /* More breathing room */
-    border-radius: 8px;     /* Slightly rounded corners */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    font-family: "Helvetica Neue", sans-serif; /* Modern font choice */
+    background-color: white; 
+    padding: 30px;         
+    border-radius: 8px;     
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+    font-family: "Helvetica Neue", sans-serif; 
 }
 
 .stTextInput, .stTextArea, .stSelectbox {
     width: 100%;  
-    border: 1px solid #e0e0e0; /* Lighter border for a cleaner look */
-    padding: 12px;           /* Increased padding */
+    border: 1px solid #ccc;
+    padding: 12px;           
     border-radius: 4px;
-    margin-bottom: 15px; /* Add spacing between elements */
+    margin-bottom: 15px; 
+    background-color: #f5f5f5; /* Slightly off-white background */
+    color: #333; /* Darker text color for contrast */
 }
 
-.stButton {
-    background-color: #0056b3; /* Deeper blue for more professional feel */
+.stButton { /* Main button style */
+    background-color: #0069d9;  /* Lighter blue for main button */
     color: white;
     padding: 12px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease; /* Smooth transition on hover */
+    transition: background-color 0.3s ease; 
 }
-
 .stButton:hover {
-    background-color: #003d80; /* Darker shade on hover */
+    background-color: #0056b3; /* Darker shade on hover */
+}
+.stButton.secondary { /* Secondary button style */
+    background-color: #6c757d;  
+    color: white;
+}
+.stButton.secondary:hover {
+    background-color: #5a6268; /* Darker shade on hover */
 }
 
 .stSubheader {
-    color: #212529; /* Darker gray for better contrast */
-    font-size: 22px;   /* Larger font size for subheaders */
+    color: #212529; 
+    font-size: 22px;   
     margin-top: 40px;
-    border-bottom: none; /* Remove the line */
-    margin-bottom: 20px;  /* Add some bottom margin */
-}
-
-.stProgress > div > div > div { /* style the progress bar */
-    background-color: #4CAF50 !important;
-}
-
-/* Add some style to the title */
-.stTitle {
-    color: #212529;
-    margin-bottom: 30px;
+    border-bottom: none; 
+    margin-bottom: 20px;  
 }
 </style>
+
 
     """,
     unsafe_allow_html=True,
