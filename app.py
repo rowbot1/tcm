@@ -199,14 +199,15 @@ def generate_diagnostic_report(context, user_input):
 def patient_info_page():
     st.subheader("Patient Search")
     search_name = st.text_input("Search Patient by Name")
-    if st.button("Search"):
+    search_button = st.button("Search")
+
+    if search_button:
         found_patient = search_patient(sheets_service, search_name)
         if found_patient:
-            st.success(f"Patient '{search_name}' found!")
             st.session_state.found_patient_data = found_patient
             st.session_state.search_success = True
-            # Update patient_info with found data
             st.session_state.patient_info = found_patient
+            st.experimental_rerun()
         else:
             st.warning(f"No patient found with name '{search_name}'")
             st.session_state.search_success = False
@@ -214,8 +215,10 @@ def patient_info_page():
 
     st.subheader("Basic Information")
     
-    # Use patient_info, which now contains found patient data if a search was successful
-    patient_data = st.session_state.patient_info
+    patient_data = st.session_state.get('patient_info', {})
+
+    if st.session_state.get('search_success'):
+        st.success(f"Patient '{patient_data.get('name', '')}' found!")
 
     name = st.text_input("Patient Name", key="name", value=patient_data.get('name', ''))
     
@@ -235,7 +238,7 @@ def patient_info_page():
     with dob_col3:
         dob_year = st.number_input("Year", key="dob_year", min_value=1900, max_value=datetime.date.today().year, value=dob_year)
 
-    dob = datetime.date(dob_year, dob_month, dob_day)
+    dob = datetime.date(dob_year, dob_month, dob_year)
     dob_str = dob.strftime("%d/%m/%Y")
     age = calculate_age(dob)
     st.write(f"Patient Age: {age} years")
