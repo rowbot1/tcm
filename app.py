@@ -11,6 +11,7 @@ from docx import Document
 import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
 
 # --- CONFIGURATION ---
 
@@ -38,13 +39,19 @@ def clear_patient_data():
     st.session_state.generated_report = None
     st.success("Patient data has been cleared.")
 
-# Google Sheets API Initialization
-def initialize_sheets_service():
+# Google API Initialization
+def initialize_google_services():
     creds = Credentials.from_service_account_info(
-        GOOGLE_SHEETS_CREDENTIALS, scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        GOOGLE_SHEETS_CREDENTIALS,
+        scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
     )
-    service = build("sheets", "v4", credentials=creds)
-    return service
+    sheets_service = build("sheets", "v4", credentials=creds)
+    docs_service = build("docs", "v1", credentials=creds)
+    drive_service = build("drive", "v3", credentials=creds)
+    return sheets_service, docs_service, drive_service
 
 # Patient Search Function
 def search_patient(sheets_service, name):
@@ -59,7 +66,12 @@ def search_patient(sheets_service, name):
         headers = values[0]
         for row in values[1:]:
             if row[0].lower() == name.lower():
-                return dict(zip(headers, row))
+                patient_data = dict(zip(headers, row))
+                # Check if there's a report ID and fetch the report content
+                if 'Report ID' in patient_data and patient_data['Report ID']:
+                    report_content = get_report_content(docs_service, patient_data['Report ID'])
+                    patient_data['Report Content'] = report_content
+                return patient_data
         return None
     except Exception as e:
         st.error(f"Error searching for patient: {e}")
@@ -104,6 +116,57 @@ def get_all_patients(sheets_service):
     except Exception as e:
         st.error(f"Error fetching patient list: {e}")
         return []
+
+# New function to save report to Google Docs
+def save_report_to_docs(docs_service, drive_service, patient_name, report_content):
+    try:
+        # Create a new Google Doc
+        doc = {
+            'title': f"TCM Diagnostic Report - {patient_name}"
+        }
+        doc = docs_service.documents().create(body=doc).execute()
+        doc_id = doc.get('documentId')
+
+        # Write content to the document
+        requests = [
+            {
+                'insertText': {
+                    'location': {
+                        'index': 1,
+                    },
+                    'text': report_content
+                }
+            }
+        ]
+        docs_service.documents().batchUpdate(documentId=doc_id, body={'requests': requests}).execute()
+
+        # Set permissions to anyone with the link can view
+        drive_service.permissions().create(
+            fileId=doc_id,
+            body={'type': 'anyone', 'role': 'reader'},
+            fields='id'
+        ).execute()
+
+        return doc_id
+    except Exception as e:
+        st.error(f"Error saving report to Google Docs: {e}")
+        return None
+
+# New function to get report content from Google Docs
+def get_report_content(docs_service, doc_id):
+    try:
+        document = docs_service.documents().get(documentId=doc_id).execute()
+        content = document.get('body').get('content')
+        full_text = ""
+        for elem in content:
+            if 'paragraph' in elem:
+                for para_elem in elem['paragraph']['elements']:
+                    if 'textRun' in para_elem:
+                        full_text += para_elem['textRun']['content']
+        return full_text
+    except Exception as e:
+        st.error(f"Error fetching report from Google Docs: {e}")
+        return None
 
 # --- STYLING ---
 
@@ -254,7 +317,7 @@ def generate_diagnostic_report(context, user_input):
 # Initialize resources
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 groq_client = groq.Client(api_key=GROQ_API_KEY)
-sheets_service = initialize_sheets_service()
+sheets_service, docs_service, drive_service = initialize_google_services()
 
 # Session state for better UX
 if "patient_info" not in st.session_state:
@@ -275,6 +338,11 @@ def patient_info_page():
         if patient_data:
             st.session_state.patient_info = patient_data
             st.success(f"Loaded data for patient: {selected_patient}")
+            
+            # Display the report if it exists
+            if 'Report Content' in patient_data:
+                st.subheader("Existing TCM Diagnostic Report")
+                st.text_area("Report Content", patient_data['Report Content'], height=300)
         else:
             st.error(f"Failed to load data for patient: {selected_patient}")
     else:
@@ -348,7 +416,6 @@ def patient_info_page():
             tongue_coating_index = tongue_coating_options.index(stored_tongue_coating) if stored_tongue_coating in tongue_coating_options else 0
             tongue_coating = st.selectbox("Tongue Coating", tongue_coating_options, key="tongue_coating", index=tongue_coating_index)
         tongue_shape = st.text_input("Tongue Shape and Features", key="tongue_shape", value=patient_data.get('Tongue Shape and Features', ''))
-
 
         st.subheader("2. Auscultation and Olfaction (聞 wén)")
         col1, col2 = st.columns(2)
@@ -489,7 +556,17 @@ def main():
                         if report:
                             st.success(f"Report generated in {end_time - start_time:.2f} seconds")
                             st.session_state.generated_report = report
-                            st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
+                            
+                            # Save report to Google Docs
+                            report_content = "\n".join([para.text for para in report.paragraphs])
+                            doc_id = save_report_to_docs(docs_service, drive_service, serializable_patient_info['Patient Name'], report_content)
+                            
+                            if doc_id:
+                                st.session_state.patient_info['Report ID'] = doc_id
+                                save_or_update_patient(sheets_service, st.session_state.patient_info)
+                                st.write("TCM Diagnostic Report generated and saved successfully. Please go to the 'View Report' page to see and download the report.")
+                            else:
+                                st.error("Failed to save the report to Google Docs.")
                         else:
                             st.error("Failed to generate the report. Please try again.")
                     except Exception as e:
@@ -505,3 +582,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+            
