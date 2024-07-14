@@ -104,12 +104,12 @@ def query_weaviate(query_text, top_k=5):
         raise ValueError("Weaviate client is not initialized")
     query_vector = embedding_model.encode(query_text).tolist()
     near_vector = {"vector": query_vector}
-    results = weaviate_client.query.get("Document", ["text"]).with_near_vector(near_vector).with_limit(top_k).do()
+    results = weaviate_client.query.get("YourClassName", ["yourFieldName"]).with_near_vector(near_vector).with_limit(top_k).do()
     
     st.write("Weaviate response:", results)  # Add this line to debug the response structure
     
-    if 'data' in results:
-        return results['data']['Get']['Document']
+    if 'data' in results and 'Get' in results['data'] and 'YourClassName' in results['data']['Get']:
+        return results['data']['Get']['YourClassName']
     else:
         st.error(f"Unexpected response format: {results}")
         return []
@@ -311,7 +311,7 @@ def main():
                     if weaviate_client is not None and embedding_model is not None:
                         try:
                             query_results = query_weaviate(user_input)
-                            context = "\n".join([result['text'] for result in query_results])
+                            context = "\n".join([result['yourFieldName'] for result in query_results])
                         except Exception as e:
                             st.error(f"Error querying Weaviate: {str(e)}")
                             st.warning("Proceeding with report generation without Weaviate context.")
