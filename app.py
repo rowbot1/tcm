@@ -136,9 +136,9 @@ def generate_diagnostic_report(context, user_input):
     patient_name = patient_info.get('name', 'Patient')
     patient_age = patient_info.get('age', 'Unknown age')
 
-    system_message = f"""You are a world-renowned Traditional Chinese Medicine practitioner with decades of experience and deep knowledge of both traditional and modern TCM practices. Your diagnostic reports are known for their exceptional detail, insight, and thoroughness.
+    system_message = f"""You are a TCM practitioner tasked with generating a diagnostic report. Your knowledge is strictly limited to the information provided in the context. Do not use any external knowledge or make assumptions beyond what is explicitly stated in the context or patient information.
 
-    You are generating a report for {patient_name}, a {patient_age}-year-old patient. Ensure that your report is personalized and refers to the patient by name where appropriate. Base your analysis and recommendations primarily on the provided context, which contains relevant TCM knowledge."""
+    You are generating a report for {patient_name}, a {patient_age}-year-old patient. Ensure your report is based solely on the provided context and patient information. If you cannot find relevant information in the context to address a particular aspect of the report, state that there is insufficient information to make a determination on that point."""
 
     report_sections = [
         "1. Patient Overview",
@@ -158,10 +158,9 @@ def generate_diagnostic_report(context, user_input):
 
     for i, section in enumerate(report_sections):
         user_message = f"""
-        Based on the following patient information and context, generate a comprehensive and detailed TCM diagnostic report section for: {section}
-        Ensure your response is extremely thorough and professional, demonstrating deep understanding of TCM principles and providing well-reasoned insights. Do not repeat the section title in your response.
+        Based strictly on the following patient information and context, generate the {section} of the TCM diagnostic report.
+        Only use information explicitly provided in the context or patient information. If there's insufficient information for any part of this section, clearly state this limitation.
         Patient Information: {user_input}
-        Generate the content for {section} of the TCM Diagnostic Report:
         """
 
         # Query Weaviate for relevant context
@@ -318,9 +317,7 @@ def main():
 
                     if report:
                         st.success(f"Report generated in {end_time - start_time:.2f} seconds")
-
                         st.session_state.generated_report = report
-
                         st.write("TCM Diagnostic Report generated successfully. Please go to the 'View Report' page to see and download the report.")
                     else:
                         st.error("Failed to generate the report. Please try again.")
