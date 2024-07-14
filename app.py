@@ -99,57 +99,32 @@ def save_or_update_patient(sheets_service, patient_data):
 st.markdown(
     """
 <style>
-.stApp {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 40px; /* increased padding to 40px */
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    font-family: "Helvetica Neue", sans-serif;
-    font-size: 16px; /* increased font size to 16px */
-    font-weight: regular; /* added font weight */
-}
-
-.stApp > div:first-child {
-    margin-top: 30px; /* reduced margin-top to 30px */
+body {
+  background-color: #f9f9f9; /* light gray */
+  color: #333; /* dark gray */
 }
 
 .stTextInput, .stTextArea, .stSelectbox {
-    width: 100%;  
-    border: 1px solid #ccc;
-    padding: 20px; /* increased padding to 20px */
-    border-radius: 4px;
-    margin-bottom: 20px; /* added margin-bottom */
-    background-color: #f7f7f7; /* lightened background color */
-    color: #333; 
+  background-color: #fff; /* white */
+  border-color: #ddd; /* light gray */
 }
 
-.stButton { /* Main button style */
-    background-color: #4CAF50; /* muted primary color */
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease; 
+.stButton {
+  background-color: #4CAF50; /* green */
+  color: #fff; /* white */
 }
+
 .stButton:hover {
-    background-color: #3e8e41; /* lightened hover color */
-}
-.stButton.secondary { /* Secondary button style */
-    background-color: #666; /* darker secondary color */
-    color: white;
-}
-.stButton.secondary:hover {
-    background-color: #555; /* darker hover color */
+  background-color: #3e8e41; /* darker green */
 }
 
-.stSubheader {
-    color: #666; /* darker text color */
-    font-size: 24px; /* increased font size to 24px */
-    margin-top: 40px;
-    border-bottom: none; 
-    margin-bottom: 20px;  
+.stButton.secondary {
+  background-color: #666; /* dark gray */
+  color: #fff; /* white */
+}
+
+.stButton.secondary:hover {
+  background-color: #555; /* darker dark gray */
 }
 </style>
 
