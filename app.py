@@ -13,17 +13,6 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 from googleapiclient.discovery import build
 
-
-import weaviate
-from weaviate.auth import AuthApiKey
-
-# Initialize Weaviate client
-auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
-client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
-
-# Get schema
-schema = client.schema.get()
-print(schema)
 # --- CONFIGURATION ---
 
 # Load sensitive data from secrets
@@ -34,6 +23,12 @@ INDEX_NAME = "tcmapp"
 
 GOOGLE_SHEETS_CREDENTIALS = st.secrets["gcp_service_account"]
 SHEET_ID = st.secrets["google_sheets"]["sheet_id"]
+
+# Initialize Weaviate client and print schema for debugging
+auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
+client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
+schema = client.schema.get()
+st.write("Weaviate Schema:", schema)  # This will print the schema in Streamlit app for debugging
 
 # Streamlit page setup
 st.set_page_config(page_title="AcuAssist", layout="wide")
@@ -93,8 +88,7 @@ def save_or_update_patient(sheets_service, patient_data):
         ).execute()
 
 # Initialize Weaviate and Groq clients (outside main function to avoid re-initialization)
-auth = AuthApiKey(api_key=WEAVIATE_API_KEY)
-weaviate_client = weaviate.Client(WEAVIATE_URL, auth_client_secret=auth)
+weaviate_client = client
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 groq_client = groq.Client(api_key=GROQ_API_KEY)
 sheets_service = initialize_sheets_service()  # Initialize Google Sheets API
