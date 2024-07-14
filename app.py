@@ -306,7 +306,7 @@ def patient_info_page():
     tongue_color = st.selectbox("Tongue Color", tongue_color_options, key="tongue_color", index=tongue_color_options.index(patient_data.get('Tongue Color', 'Not observed')))
     tongue_coating = st.selectbox(
     "Tongue Coating",
-    ["Not observerd", "Thin White", "Thick White", "Yellow", "Grey", "Black"],
+    ["Not observed", "Thin White", "Thick White", "Yellow", "Grey", "Black"],
     key="tongue_coating",
     index=["Thin White", "Thick White", "Yellow", "Grey", "Black"].index(patient_data.get('Tongue Coating', 'Thin White')) if patient_data.get('Tongue Coating', 'Thin White') in ["Thin White", "Thick White", "Yellow", "Grey", "Black"] else 0
 )
