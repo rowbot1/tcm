@@ -91,6 +91,12 @@ sheets_service = initialize_sheets_service()  # Initialize Google Sheets API
 # Session state for better UX
 if "patient_info" not in st.session_state:
     st.session_state.patient_info = {}
+if "generated_report" not in st.session_state:
+    st.session_state.generated_report = None
+if "search_success" not in st.session_state:
+    st.session_state.search_success = None
+if "found_patient_data" not in st.session_state:
+    st.session_state.found_patient_data = None
 
 @st.cache_data
 def query_weaviate(query_text, top_k=5):
