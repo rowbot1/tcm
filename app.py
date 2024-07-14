@@ -99,7 +99,7 @@ def save_or_update_patient(sheets_service, patient_data):
 st.markdown(
     """
   <style>
-  /* Custom CSS for Streamlit App */
+ /* Custom CSS for Streamlit App */
 
 /* Main page background */
 .stApp {
@@ -167,6 +167,11 @@ body {
 /* Plot background */
 .stPlot {
     background-color: #ffffff;
+}
+
+/* Ensure all text is visible */
+.stMarkdown, .stMarkdown p, .stMarkdown span, .stMarkdown div {
+    color: #2c3e50 !important;
 }
     </style>
 
