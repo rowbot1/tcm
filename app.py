@@ -25,6 +25,7 @@ st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 # Load API keys from Streamlit secrets
 WEAVIATE_URL = st.secrets["api_keys"]["WEAVIATE_URL"]
 GROQ_API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
+WEAVIATE_API_KEY = st.secrets["api_keys"]["WEAVIATE_API_KEY"]
 INDEX_NAME = "tcmapp"
 
 # Set up Google Sheets credentials
