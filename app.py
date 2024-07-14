@@ -99,112 +99,51 @@ def save_or_update_patient(sheets_service, patient_data):
 st.markdown(
     """
     <style>
-    /* Custom CSS for Streamlit App */
+    /* Custom styles for Streamlit app */
+body {
+    font-family: 'Arial', sans-serif;
+    color: #f6f6f6;
+}
 
-    /* Main page background */
-    .stApp {
-        background-color: #f0f2f6;
-    }
+h1 {
+    font-size: 2.5em;
+    text-align: center;
+    color: #2962ff;
+}
 
-    /* Sidebar */
-    .css-1d391kg {
-        background-color: #e6e9ef;
-    }
+.stButton>button {
+    background-color: #2962ff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
 
-    /* Headers */
-    h1, h2, h3 {
-        color: #1f618d;
-    }
+.stButton>button:hover {
+    background-color: #1e4db7;
+}
 
-    /* Text color */
-    body {
-        color: #2c3e50;
-    }
+.stTextInput>div>div>input {
+    background-color: #0c0e15;
+    color: #f6f6f6;
+    border: 1px solid #2962ff;
+    padding: 10px;
+    border-radius: 5px;
+}
 
-    /* Buttons */
-    .stButton>button {
-        color: #ffffff;
-        background-color: #3498db;
-        border: none;
-    }
+.stTextInput>div>div>input:focus {
+    border-color: #1e4db7;
+    outline: none;
+}
 
-    .stButton>button:hover {
-        background-color: #2980b9;
-    }
-
-    /* Input widgets */
-    .stTextInput>div>div>input, 
-    .stSelectbox>div>div>select, 
-    .stTextArea>div>div>textarea,
-    .stNumberInput>div>div>input {
-        background-color: #ffffff;
-        color: #2c3e50;
-        border: 1px solid #bdc3c7;
-    }
-
-    /* Dropdown options */
-    .css-1wa3eu0-placeholder,
-    .css-1uccc91-singleValue,
-    .css-q2y3yl-option,
-    .css-1n7v3ny-option {
-        color: #2c3e50 !important;
-        background-color: #ffffff !important;
-    }
-
-    /* Dropdown container */
-    .css-1okebmr-indicatorSeparator,
-    .css-1hb7zxy-IndicatorsContainer,
-    .css-1wa3eu0-placeholder {
-        background-color: #ffffff !important;
-        color: #2c3e50 !important;
-    }
-
-    /* Slider */
-    .stSlider>div>div>div>div {
-        background-color: #3498db;
-    }
-
-    /* Expander */
-    .streamlit-expanderHeader {
-        background-color: #d5dbdb;
-        color: #2c3e50;
-    }
-
-    /* DataFrames */
-    .dataframe {
-        border-collapse: collapse;
-    }
-
-    .dataframe th {
-        background-color: #3498db;
-        color: white;
-    }
-
-    .dataframe td {
-        background-color: #ecf0f1;
-    }
-
-    /* Plot background */
-    .stPlot {
-        background-color: #ffffff;
-    }
-
-    /* Ensure all text is visible */
-    .stMarkdown, .stMarkdown p, .stMarkdown span, .stMarkdown div, 
-    .css-17lntkn, .css-1ykc0ct, .css-1b0udyx {
-        color: #2c3e50 !important;
-    }
-
-    /* Specific adjustments for section titles and inputs */
-    .stMarkdown h3 {
-        margin-top: 20px;
-        margin-bottom: 10px;
-    }
-
-    .stTextInput, .stSelectbox, .stTextArea, .stNumberInput {
-        margin-top: 5px;
-        margin-bottom: 15px;
-    }
+.stDataFrame {
+    background-color: #0c0e15;
+    color: #f6f6f6;
+    border: 1px solid #2962ff;
+    border-radius: 5px;
+    padding: 10px;
+}
     </style>
     """,
     unsafe_allow_html=True,
