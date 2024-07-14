@@ -98,33 +98,33 @@ def save_or_update_patient(sheets_service, patient_data):
 
 st.markdown(
     """
-<style>
 .stApp {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 30px;
+    padding: 40px; /* increased padding to 40px */
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     font-family: "Helvetica Neue", sans-serif;
+    font-size: 16px; /* increased font size to 16px */
+    font-weight: regular; /* added font weight */
 }
 
-/* Add some margin to the top to prevent content from sticking to the top */
 .stApp > div:first-child {
-    margin-top: 20px;
+    margin-top: 30px; /* reduced margin-top to 30px */
 }
 
 .stTextInput, .stTextArea, .stSelectbox {
     width: 100%;  
     border: 1px solid #ccc;
-    padding: 12px;           
+    padding: 20px; /* increased padding to 20px */
     border-radius: 4px;
-    margin-bottom: 15px; 
-    background-color: #f5f5f5; 
+    margin-bottom: 20px; /* added margin-bottom */
+    background-color: #f7f7f7; /* lightened background color */
     color: #333; 
 }
 
 .stButton { /* Main button style */
-    background-color: #0069d9;
+    background-color: #4CAF50; /* muted primary color */
     color: white;
     padding: 12px 20px;
     border: none;
@@ -133,24 +133,23 @@ st.markdown(
     transition: background-color 0.3s ease; 
 }
 .stButton:hover {
-    background-color: #0056b3; 
+    background-color: #3e8e41; /* lightened hover color */
 }
 .stButton.secondary { /* Secondary button style */
-    background-color: #6c757d;  
+    background-color: #666; /* darker secondary color */
     color: white;
 }
 .stButton.secondary:hover {
-    background-color: #5a6268; 
+    background-color: #555; /* darker hover color */
 }
 
 .stSubheader {
-    color: #212529; 
-    font-size: 22px;   
+    color: #666; /* darker text color */
+    font-size: 24px; /* increased font size to 24px */
     margin-top: 40px;
     border-bottom: none; 
     margin-bottom: 20px;  
 }
-</style>
 
 
 
