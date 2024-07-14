@@ -238,10 +238,15 @@ def patient_info_page():
     with dob_col3:
         dob_year = st.number_input("Year", key="dob_year", min_value=1900, max_value=datetime.date.today().year, value=dob_year)
 
-    dob = datetime.date(dob_year, dob_month, dob_year)
-    dob_str = dob.strftime("%d/%m/%Y")
-    age = calculate_age(dob)
-    st.write(f"Patient Age: {age} years")
+    try:
+        dob = datetime.date(dob_year, dob_month, dob_day)
+        dob_str = dob.strftime("%d/%m/%Y")
+        age = calculate_age(dob)
+        st.write(f"Patient Age: {age} years")
+    except ValueError:
+        st.error("Invalid date. Please check the day, month, and year values.")
+        dob_str = ""
+        age = None
 
     gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="gender", index=["Male", "Female", "Other"].index(patient_data.get('gender', 'Male')))
 
