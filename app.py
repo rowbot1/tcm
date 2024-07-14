@@ -104,7 +104,7 @@ def save_or_update_patient(sheets_service, patient_data):
     except Exception as e:
         st.error(f"Error saving/updating patient data: {e}")
 
-# New function to get all patients
+# Function to get all patients
 def get_all_patients(sheets_service):
     try:
         result = sheets_service.spreadsheets().values().get(
@@ -117,15 +117,37 @@ def get_all_patients(sheets_service):
         st.error(f"Error fetching patient list: {e}")
         return []
 
-# New function to save report to Google Docs
+# Function to save report to Google Docs
 def save_report_to_docs(docs_service, drive_service, patient_name, report_content):
     try:
+        # Create a folder for TCM reports if it doesn't exist
+        folder_name = 'TCM Diagnostic Reports'
+        folder_metadata = {
+            'name': folder_name,
+            'mimeType': 'application/vnd.google-apps.folder'
+        }
+        
+        # Check if folder already exists
+        query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        results = drive_service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+        folders = results.get('files', [])
+        
+        if not folders:
+            # Create the folder if it doesn't exist
+            folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
+            folder_id = folder.get('id')
+        else:
+            # Use existing folder
+            folder_id = folders[0]['id']
+
         # Create a new Google Doc
         doc = {
-            'title': f"TCM Diagnostic Report - {patient_name}"
+            'name': f"TCM Diagnostic Report - {patient_name}",
+            'parents': [folder_id]
         }
-        doc = docs_service.documents().create(body=doc).execute()
-        doc_id = doc.get('documentId')
+        doc = drive_service.files().create(body=doc, fields='id, webViewLink').execute()
+        doc_id = doc.get('id')
+        doc_link = doc.get('webViewLink')
 
         # Write content to the document
         requests = [
@@ -147,12 +169,12 @@ def save_report_to_docs(docs_service, drive_service, patient_name, report_conten
             fields='id'
         ).execute()
 
-        return doc_id
+        return doc_id, doc_link
     except Exception as e:
         st.error(f"Error saving report to Google Docs: {e}")
-        return None
+        return None, None
 
-# New function to get report content from Google Docs
+# Function to get report content from Google Docs
 def get_report_content(docs_service, doc_id):
     try:
         document = docs_service.documents().get(documentId=doc_id).execute()
@@ -339,10 +361,10 @@ def patient_info_page():
             st.session_state.patient_info = patient_data
             st.success(f"Loaded data for patient: {selected_patient}")
             
-            # Display the report if it exists
-            if 'Report Content' in patient_data:
+            # Display the report link if it exists
+            if 'Report ID' in patient_data and 'Report Link' in patient_data:
                 st.subheader("Existing TCM Diagnostic Report")
-                st.text_area("Report Content", patient_data['Report Content'], height=300)
+                st.markdown(f"[View Report]({patient_data['Report Link']})")
         else:
             st.error(f"Failed to load data for patient: {selected_patient}")
     else:
@@ -559,12 +581,14 @@ def main():
                             
                             # Save report to Google Docs
                             report_content = "\n".join([para.text for para in report.paragraphs])
-                            doc_id = save_report_to_docs(docs_service, drive_service, serializable_patient_info['Patient Name'], report_content)
+                            doc_id, doc_link = save_report_to_docs(docs_service, drive_service, serializable_patient_info['Patient Name'], report_content)
                             
-                            if doc_id:
+                            if doc_id and doc_link:
                                 st.session_state.patient_info['Report ID'] = doc_id
+                                st.session_state.patient_info['Report Link'] = doc_link
                                 save_or_update_patient(sheets_service, st.session_state.patient_info)
-                                st.write("TCM Diagnostic Report generated and saved successfully. Please go to the 'View Report' page to see and download the report.")
+                                st.write("TCM Diagnostic Report generated and saved successfully.")
+                                st.markdown(f"[View Report]({doc_link})")
                             else:
                                 st.error("Failed to save the report to Google Docs.")
                         else:
@@ -582,4 +606,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-            
