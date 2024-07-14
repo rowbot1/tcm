@@ -141,6 +141,23 @@ st.markdown(
         border: 1px solid #bdc3c7;
     }
 
+    /* Dropdown options */
+    .css-1wa3eu0-placeholder,
+    .css-1uccc91-singleValue,
+    .css-q2y3yl-option,
+    .css-1n7v3ny-option {
+        color: #2c3e50 !important;
+        background-color: #ffffff !important;
+    }
+
+    /* Dropdown container */
+    .css-1okebmr-indicatorSeparator,
+    .css-1hb7zxy-IndicatorsContainer,
+    .css-1wa3eu0-placeholder {
+        background-color: #ffffff !important;
+        color: #2c3e50 !important;
+    }
+
     /* Slider */
     .stSlider>div>div>div>div {
         background-color: #3498db;
@@ -175,16 +192,6 @@ st.markdown(
     .stMarkdown, .stMarkdown p, .stMarkdown span, .stMarkdown div, 
     .css-17lntkn, .css-1ykc0ct, .css-1b0udyx {
         color: #2c3e50 !important;
-    }
-
-    /* Adjusting visibility for dropdown options */
-    .css-1wa3eu0-placeholder, .css-1uccc91-singleValue, .css-q2y3yl-option {
-        color: #2c3e50 !important;
-    }
-
-    /* Adjusting the background for dropdown options */
-    .css-q2y3yl-option {
-        background-color: #ffffff !important;
     }
     </style>
     """,
